@@ -1,0 +1,1 @@
+		$this->id_seller_product = '__PRESTASHOP_ID_PRODUCT__';

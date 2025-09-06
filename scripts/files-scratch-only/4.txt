@@ -1,0 +1,10 @@
+		$this->context->smarty->assign([
+            'module_dir' => $this->_path,
+            'module_display_name' => $this->displayName,
+            'id_seller_product' => $this->id_seller_product,
+        ]);
+
+        $jsUrl = $this->_path . 'views/js/jquery.rating.plugin.js';
+        $this->context->controller->addJS($this->_path . 'views/js/banner-configure.js', ['position' => 'bottom', 'priority' => 80]);
+        $this->context->controller->addJS($jsUrl, ['position' => 'bottom', 'priority' => 80]);
+        $this->context->controller->addCSS($this->_path . 'views/css/banner-configure.css');
