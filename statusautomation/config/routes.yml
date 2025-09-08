@@ -1,0 +1,21 @@
+statusautomation_download:
+  path: statusautomation/download
+  methods: [GET]
+  defaults:
+    _controller: PrestaShop\Module\Statusautomation\Controller\FileAdminController::downloadAction
+    _legacy_controller: 'FileAdminController'
+    _legacy_link: 'FileAdminController'
+statusautomation_upload:
+  path: statusautomation/upload
+  methods: [POST]
+  defaults:
+    _controller: PrestaShop\Module\Statusautomation\Controller\FileAdminController::uploadAction
+    _legacy_controller: 'FileAdminController'
+    _legacy_link: 'FileAdminController'
+statusautomation_upload_import:
+  path: statusautomation/upload_import
+  methods: [POST]
+  defaults:
+    _controller: PrestaShop\Module\Statusautomation\Controller\FileAdminController::uploadImportAction
+    _legacy_controller: 'FileAdminController'
+    _legacy_link: 'FileAdminController'

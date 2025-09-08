@@ -1,0 +1,7 @@
+services:
+  # Controller
+  PrestaShop\Module\Statusautomation\Controller\FileAdminController:
+    public: true
+    class: PrestaShop\Module\Statusautomation\Controller\FileAdminController
+    arguments:
+      - '@=service("prestashop.adapter.shop.context").getContextShopID()'
