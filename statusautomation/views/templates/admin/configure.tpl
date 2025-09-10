@@ -17,12 +17,8 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  *}
 
-<div class="panel">
-	<h3><i class="icon icon-credit-card"></i> {l s='Proportional Product Size' mod='statusautomation'}</h3>
-	<a href="{$STATUSAUTOMATION_DOWNLOAD_URL}" class="btn btn-primary js-download-file-btn" target="_blank">
-        <i class="material-icons">file_download</i>
-        {l s="Download File"}
-    </a>
+<div class="form-group">
+	<a href="{$STATUSAUTOMATION_DOWNLOAD_URL}" class="btn btn-primary js-download-file-btn" target="_blank"><i class="process-icon-download"></i> {l s="Download BlackList File"}</a>
 </div>
 
 {*

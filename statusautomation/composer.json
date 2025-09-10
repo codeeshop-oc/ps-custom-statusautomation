@@ -11,6 +11,7 @@
             "PrestaShop\\Module\\Statusautomation\\": "src/"
         },
         "classmap": [
+            "classes",
             "statusautomation.php"
         ]
     },

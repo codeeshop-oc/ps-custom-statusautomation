@@ -44,3 +44,6 @@ vendor/
 .php_cs.cache
 swagger-ui-5.9.0.zip
 swagger-ui-5.9.0
+
+statusautomation/views/file/*
+!statusautomation/views/file/index.php

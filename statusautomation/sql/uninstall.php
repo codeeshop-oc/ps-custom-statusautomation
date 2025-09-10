@@ -28,6 +28,8 @@ $sql = [];
 
 $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'statusautomation`';
 $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'statusautomation_blacklist`';
+// 2. Drop trigger if it already exists
+$sql[] = 'DROP TRIGGER IF EXISTS `' . _DB_PREFIX_ . 'ts_whatsapp_verify_before_insert`;';
 
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {

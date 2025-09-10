@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
@@ -18,12 +17,25 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
-header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 
-header('Cache-Control: no-store, no-cache, must-revalidate');
-header('Cache-Control: post-check=0, pre-check=0', false);
-header('Pragma: no-cache');
+class StatusautomationDelete
+{
+    public function __construct()
+    {
+        $directory = _PS_MODULE_DIR_ . 'statusautomation/views/file';
+        $files = glob($directory . '/*'); // Get all files in the directory
 
-header('Location: ../');
-exit;
+        $now = time();
+        $days = 2;
+        $maxAge = $days * 24 * 60 * 60; // 2 days in seconds
+
+        foreach ($files as $file) {
+            if (is_file($file) && $file != 'index.php') {
+                $fileAge = $now - filemtime($file);
+                if ($fileAge > $maxAge) {
+                    // unlink($file); // Delete the file
+                }
+            }
+        }
+    }
+}

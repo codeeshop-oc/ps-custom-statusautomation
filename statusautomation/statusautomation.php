@@ -58,7 +58,8 @@ class Statusautomation extends Module
      */
     public function install()
     {
-        Configuration::updateValue('SHOPIFYPSC_PHASE_1_STATUS', false);
+        Configuration::updateValue('STATUSAUTOMATION_PHASE_1_STATUS', false);
+        Configuration::updateValue('STATUSAUTOMATION_PHASE_1_BATCH_SIZE', 100);
 
         include dirname(__FILE__) . '/sql/install.php';
 
@@ -74,7 +75,7 @@ class Statusautomation extends Module
 
     public function uninstall()
     {
-        Configuration::deleteByName('SHOPIFYPSC_PHASE_1_STATUS');
+        Configuration::deleteByName('STATUSAUTOMATION_PHASE_1_STATUS');
 
         include dirname(__FILE__) . '/sql/uninstall.php';
 
@@ -133,7 +134,7 @@ class Statusautomation extends Module
             'id_language' => $this->context->language->id,
         ];
 
-        return $helper->generateForm([$this->getUploadForm(), $this->getConfigForm()]);
+        return $helper->generateForm([$this->getConfigForm(), $this->getUploadForm()]);
     }
 
     /**
@@ -145,7 +146,7 @@ class Statusautomation extends Module
             [
                 'type' => 'switch',
                 'label' => $this->l('Live mode'),
-                'name' => 'SHOPIFYPSC_PHASE_1_STATUS',
+                'name' => 'STATUSAUTOMATION_PHASE_1_STATUS',
                 'is_bool' => true,
                 'values' => [
                     [
@@ -161,19 +162,57 @@ class Statusautomation extends Module
                 ],
                 'tab' => 'general',
             ],
+            [
+                'type' => 'text',
+                'name' => 'STATUSAUTOMATION_PHASE_1_BATCH_SIZE',
+                'label' => $this->trans('Batch Import Size', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'tab' => 'general',
+            ],
         ];
 
         for ($i = 0; $i < 3; ++$i) {
+            // Configuration::deleteByName('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i);
             $inputs[] = [
                 'type' => 'text',
-                'name' => 'SHOPIFYPSC_PHASE_1_BUTTON_' . $i,
+                'lang' => true,
+                'name' => 'STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i,
                 'label' => $this->trans('Button %d', [$i + 1], 'Modules.Statusautomation.Statusautomation.php'),
                 'tab' => 'general',
             ];
 
             $inputs[] = [
+                'type' => 'select',
+                'class' => 'chosen custom_url_type',
+                'name' => 'STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i,
+                'label' => $this->trans('URL Type %d', [$i + 1], 'Modules.Statusautomation.Statusautomation.php'),
+                'options' => [
+                    'query' => [
+                        [
+                            'id' => 'MY_ACCOUNT',
+                            'name' => $this->trans('My Account', [], 'Modules.Statusautomation.Statusautomation.php'),
+                        ],
+                        [
+                            'id' => 'MY_HOMEPAGE',
+                            'name' => $this->trans('Homepage', [], 'Modules.Statusautomation.Statusautomation.php'),
+                        ],
+                        [
+                            'id' => 'LAST_PRODUCT_SEEN',
+                            'name' => $this->trans('Last Product Seen', [], 'Modules.Statusautomation.Statusautomation.php'),
+                        ],
+                        [
+                            'id' => 'CUSTOM',
+                            'name' => $this->trans('Custom', [], 'Modules.Statusautomation.Statusautomation.php'),
+                        ],
+                    ],
+                    'id' => 'id',
+                    'name' => 'name',
+                ],
+                'tab' => 'general',
+            ];
+
+            $inputs[] = [
                 'type' => 'text',
-                'name' => 'SHOPIFYPSC_PHASE_1_BUTTON_URL_' . $i,
+                'name' => 'STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i,
                 'label' => $this->trans('Button URL %d', [$i + 1], 'Modules.Statusautomation.Statusautomation.php'),
                 'tab' => 'general',
             ];
@@ -223,12 +262,20 @@ class Statusautomation extends Module
     protected function getConfigFormValues()
     {
         $configs = [
-            'SHOPIFYPSC_PHASE_1_STATUS' => Tools::getValue('SHOPIFYPSC_PHASE_1_STATUS', Configuration::get('SHOPIFYPSC_PHASE_1_STATUS')),
+            'STATUSAUTOMATION_PHASE_1_STATUS' => Tools::getValue('STATUSAUTOMATION_PHASE_1_STATUS', Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')),
+            'STATUSAUTOMATION_PHASE_1_BATCH_SIZE' => Tools::getValue('STATUSAUTOMATION_PHASE_1_BATCH_SIZE', Configuration::get('STATUSAUTOMATION_PHASE_1_BATCH_SIZE')),
         ];
 
         for ($i = 0; $i < 3; ++$i) {
-            $configs['SHOPIFYPSC_PHASE_1_BUTTON_' . $i] = Tools::getValue('SHOPIFYPSC_PHASE_1_BUTTON_' . $i, Configuration::get('SHOPIFYPSC_PHASE_1_BUTTON_' . $i));
-            $configs['SHOPIFYPSC_PHASE_1_BUTTON_URL_' . $i] = Tools::getValue('SHOPIFYPSC_PHASE_1_BUTTON_URL_' . $i, Configuration::get('SHOPIFYPSC_PHASE_1_BUTTON_URL_' . $i));
+            $configs['STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i] = Tools::getValue('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i, Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i));
+            $configs['STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i] = Tools::getValue('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i, Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i));
+            $tmp = [];
+
+            foreach (Language::getIDs(true) as $id_lang) {
+                $tmp[$id_lang] = Tools::getValue('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i . '_' . $id_lang, Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, $id_lang));
+            }
+
+            $configs['STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i] = $tmp;
         }
 
         return $configs;
@@ -241,8 +288,8 @@ class Statusautomation extends Module
     {
         $form_values = $this->getConfigFormValues();
 
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+        foreach ($form_values as $key => $value) {
+            Configuration::updateValue($key, $value);
         }
     }
 
@@ -272,7 +319,7 @@ class Statusautomation extends Module
         return [
             'form' => [
                 'legend' => [
-                    'title' => $this->l('Upload CSV File'),
+                    'title' => $this->l('Upload BlackList CSV File'),
                     'icon' => 'icon-cogs',
                 ],
                 'input' => [
@@ -285,7 +332,8 @@ class Statusautomation extends Module
                 'buttons' => [
                     [
                         'type' => 'button',
-                        'class' => 'btn btn-primary pull-right',
+                        'icon' => 'process-icon-upload',
+                        'class' => 'btn-primary pull-right',
                         'title' => $this->l('Upload'),
                         'id' => 'submitOptionsmodule',
                     ],
@@ -310,7 +358,7 @@ class Statusautomation extends Module
 
     public function hookModuleRoutes($params)
     {
-        if (!Configuration::get('SHOPIFYPSC_PHASE_1_STATUS')) {
+        if (!Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
             return [];
         }
 
@@ -328,7 +376,7 @@ class Statusautomation extends Module
 
     public function hookActionCustomerGridDefinitionModifier($params)
     {
-        if (Module::isEnabled($this->name) && Configuration::get('SHOPIFYPSC_PHASE_1_STATUS')) {
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
             $definition = $params['definition'];
             $filters = $definition->getFilters();
             $columns = $definition->getColumns();
@@ -372,7 +420,7 @@ class Statusautomation extends Module
      */
     public function hookActionCustomerGridQueryBuilderModifier(array $params)
     {
-        if (Module::isEnabled($this->name) && Configuration::get('SHOPIFYPSC_PHASE_1_STATUS')) {
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
             $searchQueryBuilder = $params['search_query_builder'];
             $searchCriteria = $params['search_criteria'];
             $searchQueryBuilder->addSelect(
@@ -401,5 +449,25 @@ class Statusautomation extends Module
     public function isUsingNewTranslationSystem()
     {
         return true;
+    }
+
+    public static function saveProportion($id_product, $proportion_value)
+    {
+        Db::getInstance()->delete('pproductsize', 'id_product = "' . (int) $id_product . '"');
+
+        Db::getInstance()->insert('pproductsize', [
+            'proportion_value' => $proportion_value,
+            'id_product' => $id_product,
+        ]);
+
+        return true;
+    }
+
+    public static function initUploadProcess($csv, $xlsx)
+    {
+        // Db::getInstance()->execute('TRUNCATE `' . _DB_PREFIX_ . 'bulkorderstatusupdate`');
+
+        @unlink($csv);
+        @unlink($xlsx);
     }
 }

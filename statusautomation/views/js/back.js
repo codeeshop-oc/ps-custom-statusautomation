@@ -17,15 +17,34 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
 
-$(document).ready(function () {
+// $(document).ready(function () {
 	// remove panel heading
 	// const panel = $('[name="submitStatusautomationModule"]').parents('.panel')
 	// panel.find('.panel-heading').remove()
-})
+// })
 
 $(document).ready(function () {
+
+	$('.custom_url_type').each((i, ele) => {
+		$(ele).trigger('change')
+	});
+
+	// rearranging form to top
+	(function () {
+		const ele = $('#submitOptionsmodule').parents('.panel')
+		const html = ele.prop('outerHTML')
+		ele.remove()
+		$('form#module_form').prepend(html)
+	})()
+
 	progressBar()
 	progressBarHide()
+}).on('change', '.custom_url_type', function () {
+	if ($(this).val() != 'CUSTOM') {
+		$(this).parents('.form-group').next().hide(250)
+	} else {
+		$(this).parents('.form-group').next().show(250)
+	}
 }).on('change', '[name="STATUSAUTOMATION_FILE"]', function () {
 	progressBarHide()
 }).on('click', '[name="submitOptionsmodule"]', function () {
