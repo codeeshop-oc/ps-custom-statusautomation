@@ -17,17 +17,34 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
 
-
+var Statusautomation = function () {}
 $(document).ready(function () {
 
-	$('.user-info').parent().before(`
-		<div>
-			<div class="user-info">
-		          <a href="${STATUSAUTOMATION_LOGIN_URL}" title="" rel="nofollow">
-		        <i class="material-icons"></i>
-		        <span class="hidden-sm-down">${STATUSAUTOMATION_SIGN_IN_LOGIN}</span>
-		      </a>
-	       </div>
-       </div>
-	`);
+	Statusautomation.prototype.verifyPhone = function () {
+	    const CURRENT_URL = $('#verify_phone-form').val()
+
+		$.ajax({
+	       type: 'POST',
+	       url: CURRENT_URL,
+	       dataType: 'JSON',
+	       data: $('#verify_phone-form input'),
+	       success: function(jsonData)
+	       {
+	       		console.log(jsonData, 'jsonData')
+				// if(jsonData.status) {
+				// 	showSuccessMessage(jsonData.message)
+				// 	startProcessing(0, jsonData.total_count)
+				// } else {
+				// 	showErrorMessage(jsonData.message)
+				// }
+	       },
+	       error: function(XMLHttpRequest, textStatus, errorThrown)
+	       {
+				// showErrorMessage(errorThrown)
+	       }
+	    });
+	}
+}).on('click', '#submit-verify', function () {
+	const obj = new Statusautomation()
+	console.log(obj.verifyPhone())
 })

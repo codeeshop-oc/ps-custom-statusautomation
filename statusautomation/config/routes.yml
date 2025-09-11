@@ -19,3 +19,10 @@ statusautomation_upload_import:
     _controller: PrestaShop\Module\Statusautomation\Controller\FileAdminController::uploadImportAction
     _legacy_controller: 'FileAdminController'
     _legacy_link: 'FileAdminController'
+statusautomation_update_is_verified_toggle:
+  path: /statusautomation/customers/{customerId}/update-is-verified
+  methods: [GET, POST]
+  defaults:
+    _controller: 'PrestaShop\Module\Statusautomation\Controller\VerifiedStatusController::updateStatusAction'
+    _legacy_controller: AdminCustomers # Optional, just for legacy links
+    _legacy_link: AdminCustomers:updateCustomerGroup

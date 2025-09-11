@@ -23,6 +23,9 @@ if (!defined('_PS_VERSION_')) {
 }
 
 use PrestaShop\PrestaShop\Adapter\SymfonyContainer;
+use PrestaShop\PrestaShop\Core\Grid\Column\Type\Common\ToggleColumn;
+use PrestaShop\PrestaShop\Core\Grid\Filter\Filter;
+use PrestaShopBundle\Form\Admin\Type\YesAndNoChoiceType;
 
 class Statusautomation extends Module
 {
@@ -50,6 +53,7 @@ class Statusautomation extends Module
 
         // include dirname(__FILE__) . '/sql/uninstall.php';
         // include dirname(__FILE__) . '/sql/install.php';
+        // $this->registerHook('');
     }
 
     /**
@@ -58,7 +62,7 @@ class Statusautomation extends Module
      */
     public function install()
     {
-        Configuration::updateValue('STATUSAUTOMATION_PHASE_1_STATUS', false);
+        Configuration::updateValue('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY', false);
         Configuration::updateValue('STATUSAUTOMATION_PHASE_1_BATCH_SIZE', 100);
 
         include dirname(__FILE__) . '/sql/install.php';
@@ -68,14 +72,16 @@ class Statusautomation extends Module
                 'header',
                 'displayBackOfficeHeader',
                 'moduleRoutes',
+                'actionValidateOrder',
                 'actionCustomerGridQueryBuilderModifier',
+                'additionalCustomerFormFields',
                 'actionCustomerGridDefinitionModifier',
             ]);
     }
 
     public function uninstall()
     {
-        Configuration::deleteByName('STATUSAUTOMATION_PHASE_1_STATUS');
+        Configuration::deleteByName('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY');
 
         include dirname(__FILE__) . '/sql/uninstall.php';
 
@@ -128,8 +134,17 @@ class Statusautomation extends Module
             . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
+        $field_values = $this->getConfigFormValues();
+
+        $field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS[]'] = [];
+        if (!empty($field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS']) && is_string($field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'])) {
+            $field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS[]'] = json_decode($field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS']);
+        } else {
+            $field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS[]'] = $field_values['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'];
+        }
+
         $helper->tpl_vars = [
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
+            'fields_value' => $field_values, /* Add values for your inputs */
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         ];
@@ -145,8 +160,8 @@ class Statusautomation extends Module
         $inputs = [
             [
                 'type' => 'switch',
-                'label' => $this->l('Live mode'),
-                'name' => 'STATUSAUTOMATION_PHASE_1_STATUS',
+                'label' => $this->trans('Enable (Phone Verify)', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'name' => 'STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY',
                 'is_bool' => true,
                 'values' => [
                     [
@@ -159,6 +174,63 @@ class Statusautomation extends Module
                         'value' => false,
                         'label' => $this->l('Disabled'),
                     ],
+                ],
+                'tab' => 'general',
+            ],
+            [
+                'type' => 'select',
+                'class' => 'chosen',
+                'label' => $this->trans('Order Status (Phone Verify)', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'name' => 'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY',
+                'options' => [
+                    'query' => $this->getOrderStates(),
+                    'id' => 'id',
+                    'name' => 'name',
+                ],
+                'tab' => 'general',
+            ],
+            [
+                'type' => 'switch',
+                'label' => $this->trans('Enable (BlackList)', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'name' => 'STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST',
+                'is_bool' => true,
+                'values' => [
+                    [
+                        'id' => 'active_on',
+                        'value' => true,
+                        'label' => $this->l('Enabled'),
+                    ],
+                    [
+                        'id' => 'active_off',
+                        'value' => false,
+                        'label' => $this->l('Disabled'),
+                    ],
+                ],
+                'tab' => 'general',
+            ],
+            [
+                'type' => 'select',
+                'class' => 'chosen',
+                'label' => $this->trans('Order Status (BlackList)', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'name' => 'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST',
+                'options' => [
+                    'query' => $this->getOrderStates(),
+                    'id' => 'id',
+                    'name' => 'name',
+                ],
+                'tab' => 'general',
+            ],
+            [
+                'type' => 'select',
+                'multiple' => true,
+                'label' => $this->trans('Payment Method', [], 'Modules.Statusautomation.Statusautomation.php'),
+                'class' => 'chosen',
+                'name' => 'STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS',
+                'required' => false,
+                'options' => [
+                    'query' => $this->getPaymentMethods(),
+                    'id' => 'id',
+                    'name' => 'name',
                 ],
                 'tab' => 'general',
             ],
@@ -213,7 +285,7 @@ class Statusautomation extends Module
             $inputs[] = [
                 'type' => 'text',
                 'name' => 'STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i,
-                'label' => $this->trans('Button URL %d', [$i + 1], 'Modules.Statusautomation.Statusautomation.php'),
+                'label' => $this->trans('Button %d (Redirect URL)', [$i + 1], 'Modules.Statusautomation.Statusautomation.php'),
                 'tab' => 'general',
             ];
         }
@@ -232,23 +304,6 @@ class Statusautomation extends Module
                     // 'advanced' => $this->l('Advanced Settings'),
                 ],
                 'input' => $inputs,
-
-                // [
-
-                //     // array(
-                //     //     'col' => 3,
-                //     //     'type' => 'text',
-                //     //     'prefix' => '<i class="icon icon-envelope"></i>',
-                //     //     'desc' => $this->l('Enter a valid email address'),
-                //     //     'name' => 'STATUSAUTOMATION_ACCOUNT_EMAIL',
-                //     //     'label' => $this->l('Email'),
-                //     // ),
-                //     // array(
-                //     //     'type' => 'password',
-                //     //     'name' => 'STATUSAUTOMATION_ACCOUNT_PASSWORD',
-                //     //     'label' => $this->l('Password'),
-                //     // ),
-                // ],
                 'submit' => [
                     'title' => $this->l('Save'),
                 ],
@@ -262,7 +317,10 @@ class Statusautomation extends Module
     protected function getConfigFormValues()
     {
         $configs = [
-            'STATUSAUTOMATION_PHASE_1_STATUS' => Tools::getValue('STATUSAUTOMATION_PHASE_1_STATUS', Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')),
+            'STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY' => Tools::getValue('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY', Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')),
+            'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY' => Tools::getValue('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY', Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY')),
+            'STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST' => Tools::getValue('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST', Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')),
+            'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST' => Tools::getValue('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST', Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST')),
             'STATUSAUTOMATION_PHASE_1_BATCH_SIZE' => Tools::getValue('STATUSAUTOMATION_PHASE_1_BATCH_SIZE', Configuration::get('STATUSAUTOMATION_PHASE_1_BATCH_SIZE')),
         ];
 
@@ -278,6 +336,8 @@ class Statusautomation extends Module
             $configs['STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i] = $tmp;
         }
 
+        $configs['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'] = Tools::getValue('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS', Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'));
+
         return $configs;
     }
 
@@ -289,7 +349,11 @@ class Statusautomation extends Module
         $form_values = $this->getConfigFormValues();
 
         foreach ($form_values as $key => $value) {
-            Configuration::updateValue($key, $value);
+            if (in_array($key, ['STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS']) && is_array($value)) {
+                Configuration::updateValue($key, json_encode($value));
+            } else {
+                Configuration::updateValue($key, $value);
+            }
         }
     }
 
@@ -349,16 +413,39 @@ class Statusautomation extends Module
     {
         $loginURL = $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => '1']);
         Media::addJsDef([
-            'statusautomation_login_url' => $loginURL,
+            'STATUSAUTOMATION_LOGIN_URL' => $loginURL,
+            'STATUSAUTOMATION_SIGN_IN_LOGIN' => $this->trans('WhatsApp', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'STATUSAUTOMATION_ADD_EMAIL_TEXT' => $this->trans('+ Add Email', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'STATUSAUTOMATION_HIDE_EMAIL_TEXT' => $this->trans('+ Hide Email', [], 'Modules.Statusautomation.Statusautomation.php'),
         ]);
 
+        if (in_array(Tools::getValue('controller'), ['login']) && Tools::getValue('module') == 'statusautomation') {
+            if (Tools::getValue('create_account') == '1') {
+                $this->context->controller->addJS($this->_path . 'views/js/signup.js');
+            } else {
+                $this->context->controller->addJS($this->_path . 'views/js/login.js');
+            }
+        }
         $this->context->controller->addJS($this->_path . 'views/js/front.js');
         $this->context->controller->addCSS($this->_path . 'views/css/front.css');
+
+        $this->saveLastVisitedProductId();
+    }
+
+    // save last visited product id
+    private function saveLastVisitedProductId()
+    {
+        if (Tools::getValue('controller') == 'product') {
+            $productId = (int) Tools::getValue('id_product');
+            if ($productId) {
+                Context::getContext()->cookie->__set('statusautomation_last_viewed_product', $productId);
+            }
+        }
     }
 
     public function hookModuleRoutes($params)
     {
-        if (!Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
+        if (!Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             return [];
         }
 
@@ -376,37 +463,30 @@ class Statusautomation extends Module
 
     public function hookActionCustomerGridDefinitionModifier($params)
     {
-        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
+        // die('sds');
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $definition = $params['definition'];
             $filters = $definition->getFilters();
             $columns = $definition->getColumns();
 
-            foreach (['country_id', 'country'] as $key) {
-                $columns->remove($key);
-                $filters->remove($key);
-            }
-
             $definition
                 ->getColumns()
                 ->addAfter(
-                    'osname',
-                    (new DataColumn('shipping_status'))
-                        ->setName('Shipping Status')
+                    'lastname',
+                    (new ToggleColumn('is_verified_field'))
+                        ->setName($this->trans('Is Verified', [], 'Admin.Global'))
                         ->setOptions([
-                            'field' => 'shipping_status_field', // the database field
+                            'field' => 'is_verified',
+                            'route' => 'statusautomation_update_is_verified_toggle',
+                            'primary_field' => 'id_customer',
+                            'route_param_name' => 'customerId',
                         ])
                 );
 
             $filters = $definition->getFilters();
             $filters->add(
-                (new Filter('shipping_status', ChoiceType::class))
-                    ->setTypeOptions([
-                        'choices' => $this->getCustomerGroupChoices(),
-                        'required' => false,
-                        // 'placeholder' => $this->l('All groups'),
-                        'translation_domain' => false,
-                    ])
-                    ->setAssociatedColumn('shipping_status')
+                (new Filter('is_verified_field', YesAndNoChoiceType::class))
+                    ->setAssociatedColumn('is_verified_field')
             );
         }
     }
@@ -420,27 +500,31 @@ class Statusautomation extends Module
      */
     public function hookActionCustomerGridQueryBuilderModifier(array $params)
     {
-        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS')) {
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $searchQueryBuilder = $params['search_query_builder'];
             $searchCriteria = $params['search_criteria'];
             $searchQueryBuilder->addSelect(
-                'IF(wdto.`shipping_status` IS NULL, "", wdto.`shipping_status`) as `shipping_status_field`'
+                'IF(whatsapp.`is_verified` = "1", 1, 0) as `is_verified_field`'
             );
-            $searchQueryBuilder->leftJoin(
-                'o',
-                '`' . pSQL(_DB_PREFIX_) . 'ordericonsandfilters`',
-                'wdto',
-                'wdto.`id_order` = o.`id_order`'
-            );
+
+            if (!Module::isEnabled('ts_whatsapp')) {
+                $searchQueryBuilder->leftJoin(
+                    'c',
+                    '`' . pSQL(_DB_PREFIX_) . 'ts_whatsapp`',
+                    'whatsapp',
+                    'whatsapp.`id_customer` = c.`id_customer`'
+                );
+            }
+
             foreach ($searchCriteria->getFilters() as $filterName => $filterValue) {
-                if ('shipping_status' === $filterName) {
-                    if ($filterValue == 'FULLY_SHIPPED') {
-                        $searchQueryBuilder->setParameter('shipping_status', $filterValue);
-                        $searchQueryBuilder->andWhere('(shipping_status = :shipping_status)');
-                    } elseif ($filterValue == 'PARTIALLY_SHIPPED') {
-                        $searchQueryBuilder->setParameter('shipping_status', $filterValue);
-                        $searchQueryBuilder->andWhere('(shipping_status = :shipping_status)');
+                if ('is_verified_field' === $filterName) {
+                    $searchQueryBuilder->setParameter('is_verified_field', $filterValue);
+                    $condition = '';
+                    if ($filterValue == 0) {
+                        $condition = 'whatsapp.is_verified is null OR ';
                     }
+
+                    $searchQueryBuilder->andWhere('(' . $condition . ' whatsapp.is_verified = :is_verified_field)');
                 }
             }
         }
@@ -469,5 +553,134 @@ class Statusautomation extends Module
 
         @unlink($csv);
         @unlink($xlsx);
+    }
+
+    public function hookAdditionalCustomerFormFields($params)
+    {
+        if (in_array(Tools::getValue('controller'), ['login']) && Tools::getValue('module') == 'statusautomation') {
+            if (Tools::getValue('create_account') == '1') {
+                foreach (array_keys($params['fields']) as $key) {
+                    if (in_array($key, ['password', 'birthday', 'id_gender'])) {
+                        unset($params['fields'][$key]);
+
+                    // remove
+                    // array_splice($params['fields'], 0, 0, [
+                    //     (new FormField())
+                    //     ->setName($key)
+                    //     ->setType('hidden')
+                    //         ->setValue('')
+                    //         ->setRequired(false)
+                    //         ->setLabel($key),
+                    // ]);
+                    } elseif ($key == 'email') {
+                        // array_splice($params['fields'], 0, 0, [
+                        //     (new FormField())
+                        //     ->setName($key)
+                        //     ->setType('hidden')
+                        //         ->setValue('')
+                        //         ->setRequired(false)
+                        //         ->setLabel($key),
+                        // ]);
+                    }
+                }
+            } else {
+            }
+        }
+
+        // dump(Tools::getAllValues());
+        // die;
+        // if (!Configuration::get('BILLINGCUSTOMIZE_LIVE_CUSTOMER_GROUP_SELECTION_MODE')) {
+        //     return [];
+        // }
+
+        // dump($params['fields']);die;
+
+        return [];
+    }
+
+    public function hookActionValidateOrder($params)
+    {
+    }
+
+    public function hookDisplayOrderConfirmation($params)
+    {
+        // if (!Configuration::get('PSVIPFLOW_ACTIVATED') || !Module::isEnabled($this->name)) {
+        //     return;
+        // }
+
+        // payment method valid
+        if (empty(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS')) || (!empty(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS')) && in_array($params['order']->module, json_decode(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'))))) {
+            $address = new Address($params['order']->id_address_delivery);
+
+            // is a blacklisted number
+            $is_blacklisted_number = false;
+            if (!empty($address->phone)) {
+                $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone);
+            } elseif (!empty($address->phone_mobile)) {
+                $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone_mobile);
+            }
+
+            if ($is_blacklisted_number) {
+                $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST'));
+            }
+
+            // is a verified number
+            $is_verified_number = false;
+            if (!empty($address->phone)) {
+                $is_verified_number = StatusautomationVerify::isVerified($address->phone);
+            } elseif (!empty($address->phone_mobile)) {
+                $is_verified_number = StatusautomationVerify::isVerified($address->phone_mobile);
+            }
+
+            if ($is_verified_number) {
+                $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY'));
+            }
+        }
+    }
+
+    private function putPaymentStatus($order, $order_status)
+    {
+        if (Validate::isLoadedObject($order) && $order->current_state != $order_status) {
+            $order->setCurrentState((int) $order_status);
+        }
+    }
+
+    private function getOrderStates()
+    {
+        $orderStates = OrderState::getOrderStates($this->context->language->id);
+        $data = [];
+
+        $data[] = [
+            'id' => '',
+            'val' => '',
+            'name' => $this->trans('--Select--', [], 'Modules.Psvipflow.Psvipflow.php'),
+        ];
+
+        foreach ($orderStates as $order_state) {
+            $data[] = [
+                'id' => $order_state['id_order_state'],
+                'val' => $order_state['id_order_state'],
+                'name' => $order_state['name'],
+            ];
+        }
+
+        return $data;
+    }
+
+    private function getPaymentMethods()
+    {
+        $payment_methods = [];
+        foreach (PaymentModule::getInstalledPaymentModules() as $payment) {
+            $module = Module::getInstanceByName($payment['name']);
+            if (Validate::isLoadedObject($module) && $module->active) {
+                $payment_methods[] = [
+                    'name' => $module->displayName,
+                    'id' => $module->name,
+                    'val' => $module->name,
+                ];
+            }
+        }
+
+        return $payment_methods;
     }
 }

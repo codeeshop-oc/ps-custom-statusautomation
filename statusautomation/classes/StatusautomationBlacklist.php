@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
@@ -17,7 +18,6 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
-
 class StatusautomationBlacklist extends ObjectModel
 {
     public $id_statusautomation_blacklist;
@@ -55,5 +55,18 @@ class StatusautomationBlacklist extends ObjectModel
 		    ON DUPLICATE KEY UPDATE
 		    is_blacklisted = "YES"
 		');
+    }
+
+    public static function isBlacklisted($delivery_phone_number, $is_blacklisted = 'YES')
+    {
+        $query = new DbQuery();
+        $query->select('count(s.`phone_number`)');
+        $query->from(self::$definition['table'], 's');
+        $query->where('s.`phone_number` = "' . (string) $delivery_phone_number . '" OR s.`phone_number` = "0' . (string) $delivery_phone_number . '"');
+        $query->where('s.`is_blacklisted` = "' . $is_blacklisted . '"');
+
+        $whatsapp_number = Db::getInstance()->getValue($query);
+
+        return $whatsapp_number ?? false;
     }
 }
