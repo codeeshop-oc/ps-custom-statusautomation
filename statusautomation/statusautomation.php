@@ -53,7 +53,7 @@ class Statusautomation extends Module
 
         // include dirname(__FILE__) . '/sql/uninstall.php';
         // include dirname(__FILE__) . '/sql/install.php';
-        // $this->registerHook('');
+        // $this->unregisterHook('actionValidateOrder');
     }
 
     /**
@@ -72,7 +72,7 @@ class Statusautomation extends Module
                 'header',
                 'displayBackOfficeHeader',
                 'moduleRoutes',
-                'actionValidateOrder',
+                'displayOrderConfirmation',
                 'actionCustomerGridQueryBuilderModifier',
                 'additionalCustomerFormFields',
                 'actionCustomerGridDefinitionModifier',
@@ -373,6 +373,10 @@ class Statusautomation extends Module
             $this->context->controller->addJS($this->_path . 'views/js/back.js');
             $this->context->controller->addCSS($this->_path . 'views/css/back.css');
         }
+
+        if (Tools::getValue('controller') == 'AdminCustomers') {
+            $this->context->controller->addJS($this->_path . 'views/js/back_customer.js');
+        }
     }
 
     /**
@@ -463,7 +467,6 @@ class Statusautomation extends Module
 
     public function hookActionCustomerGridDefinitionModifier($params)
     {
-        // die('sds');
         if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $definition = $params['definition'];
             $filters = $definition->getFilters();
@@ -598,42 +601,47 @@ class Statusautomation extends Module
         return [];
     }
 
-    public function hookActionValidateOrder($params)
-    {
-    }
-
+    // added this so its came after the module: prestavipflow, as order is reassigned for customer so we have to check number of orders
     public function hookDisplayOrderConfirmation($params)
     {
-        // if (!Configuration::get('PSVIPFLOW_ACTIVATED') || !Module::isEnabled($this->name)) {
-        //     return;
-        // }
+        if (!Module::isEnabled($this->name)) {
+            return;
+        }
 
-        // payment method valid
+        // if payment method valid
         if (empty(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS')) || (!empty(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS')) && in_array($params['order']->module, json_decode(Configuration::get('STATUSAUTOMATION_PHASE_1_PAYMENT_METHODS'))))) {
+            // $orders_count = StatusautomationVerify::getOrderCount($params['order']->id_customer);
+            // if ($orders_count > 1) {
+
             $address = new Address($params['order']->id_address_delivery);
 
+            if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
+                // is a verified number
+                $is_verified_number = false;
+                if (!empty($address->phone)) {
+                    $is_verified_number = StatusautomationVerify::isVerified($address->phone);
+                } elseif (!empty($address->phone_mobile)) {
+                    $is_verified_number = StatusautomationVerify::isVerified($address->phone_mobile);
+                }
+
+                if ($is_verified_number) {
+                    $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY'));
+                }
+            }
+
             // is a blacklisted number
-            $is_blacklisted_number = false;
-            if (!empty($address->phone)) {
-                $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone);
-            } elseif (!empty($address->phone_mobile)) {
-                $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone_mobile);
-            }
+            if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
 
-            if ($is_blacklisted_number) {
-                $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST'));
-            }
+                $is_blacklisted_number = false;
+                if (!empty($address->phone)) {
+                    $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone);
+                } elseif (!empty($address->phone_mobile)) {
+                    $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone_mobile);
+                }
 
-            // is a verified number
-            $is_verified_number = false;
-            if (!empty($address->phone)) {
-                $is_verified_number = StatusautomationVerify::isVerified($address->phone);
-            } elseif (!empty($address->phone_mobile)) {
-                $is_verified_number = StatusautomationVerify::isVerified($address->phone_mobile);
-            }
-
-            if ($is_verified_number) {
-                $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_PHONE_VERIFY'));
+                if ($is_blacklisted_number) {
+                    $this->putPaymentStatus($params['order'], Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST'));
+                }
             }
         }
     }

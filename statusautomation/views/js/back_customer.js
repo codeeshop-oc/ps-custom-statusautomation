@@ -17,34 +17,11 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
 
-var Statusautomation = function () {}
 $(document).ready(function () {
-
-	Statusautomation.prototype.verifyPhone = function () {
-	    const CURRENT_URL = $('#verify_phone-form').val()
-
-		$.ajax({
-	       type: 'POST',
-	       url: CURRENT_URL,
-	       dataType: 'JSON',
-	       data: $('#verify_phone-form input'),
-	       success: function(jsonData)
-	       {
-	       		console.log(jsonData, 'jsonData')
-				// if(jsonData.status) {
-				// 	showSuccessMessage(jsonData.message)
-				// 	startProcessing(0, jsonData.total_count)
-				// } else {
-				// 	showErrorMessage(jsonData.message)
-				// }
-	       },
-	       error: function(XMLHttpRequest, textStatus, errorThrown)
-	       {
-				// showErrorMessage(errorThrown)
-	       }
-	    });
-	}
-}).on('click', '#submit-verify', function () {
-	const obj = new Statusautomation()
-	console.log(obj.verifyPhone())
-})
+	// hide enable/disable if whatsapp number does not exist
+	$('.column-is_verified_field').each((i, ele) => {
+		if (!$(ele).parent().find('.column-whatsapp_number').text().trim()) {
+			$(ele).children().hide()
+		}
+	});
+});

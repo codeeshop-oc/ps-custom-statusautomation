@@ -60,4 +60,15 @@ class StatusautomationVerify extends ObjectModel
         return $whatsapp_number ?? false;
     }
 
+    public static function getOrderCount($id_customer)
+    {
+        $query = new DbQuery();
+        $query->select('count(s.`id_order`)');
+        $query->from('orders', 's');
+        $query->where('s.`id_customer` = "' . $id_customer . '"');
+
+        $whatsapp_number = Db::getInstance()->getValue($query);
+
+        return $whatsapp_number ?? false;
+    }
 }
