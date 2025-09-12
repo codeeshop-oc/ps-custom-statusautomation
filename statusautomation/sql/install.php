@@ -57,7 +57,7 @@ CREATE TRIGGER `' . _DB_PREFIX_ . 'ts_whatsapp_verify_before_insert`
 BEFORE INSERT ON `' . _DB_PREFIX_ . 'ts_whatsapp_verify`
 FOR EACH ROW
 BEGIN
-    IF NEW.date_expire IS NULL THEN
+    IF NEW.date_expire = '0000-00-00 00:00:00' THEN
         SET NEW.date_expire = DATE_ADD(NOW(), INTERVAL 10 MINUTE);
     END IF;
 END;';

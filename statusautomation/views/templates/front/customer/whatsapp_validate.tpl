@@ -19,18 +19,13 @@
 {extends file='page.tpl'}
 
 {block name='page_title'}
-  {l s='Validate account' d='Modules.Statusautomation.Whatsapp_validate'}
-{/block}
-
-{extends file='page.tpl'}
-
-{block name='page_title'}
-{l s='Validate account' d='Modules.Statusautomation.Whatsapp_validate'}
+	{l s='Validate account' d='Modules.Statusautomation.Whatsapp_validate'}
 {/block}
 
 {block name='page_content'}
 	{block name='login_form_container'}
-		<form id="verify_phone-form" action="{block name='login_form_actionurl'}{$action}{/block}" method="post">
+		<form id="verify_phone-form" action="{block name='login_form_actionurl'}{$whatsapp_verify_url}{/block}" method="post">
+
 			<section>
 				<br />
 				<div class="form-group row has-error1">
@@ -39,12 +34,19 @@
 					<div class="col-md-6">
 						<div class="my-sm-2">{l s='WhatsApp Number' d='Modules.Statusautomation.Whatsapp_validate'}</div>
 						<div class="input-group"><span class="input-group-addon">{$prefix_whatsapp_number}</span><input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required=""></div>
+
+						{*
 						<span class="form-control-comment hidden">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}
 						</span>
-						<div class="help-block hidden">
+
+						<div class="whatsapp_help_block help-block hidden">
 							<ul>
 								<li class="alert alert-danger">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}</li>
 							</ul>
+						</div>
+						*}
+						<div class="whatsapp_help_block help-block">
+							<ul></ul>
 						</div>
 					</div> {* col-md-6 *}
 				</div> {* form-group *}
@@ -57,7 +59,7 @@
 							<input class="form-control" name="phone_verify_code" type="text" value="" required="">
 						</div>
 						<div>{l s='Not received ?' d='Modules.Statusautomation.Whatsapp_validate'}
-					 		<button type="button" id="resend_verification_code" class="btn btn-link" href="">{l s='resend code' d='Modules.Statusautomation.Whatsapp_validate'}</button>
+					 		<button type="button" id="submit-resend_verification_code" data-url="{$whatsapp_resend_verification_code_url}" class="btn btn-link" href="">{l s='resend code' d='Modules.Statusautomation.Whatsapp_validate'}</button>
 					 	</div>
 					</div>
 				</div>

@@ -30,7 +30,7 @@ $(document).ready(function () {
 		<div class="form-group row" id="show_email_option_form">
 			<label class="col-md-3 form-control-label"></label>
 			<div class="col-md-6">
-				<button type="button" class="btn btn-default show_email_option">+ Add Email</button>
+				<button type="button" class="btn btn-default show_email_option">${STATUSAUTOMATION_ADD_EMAIL_TEXT}</button>
 			</div>
 		</div>
 	`)

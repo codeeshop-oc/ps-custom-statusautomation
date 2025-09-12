@@ -17,34 +17,194 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
 
-var Statusautomation = function () {}
-$(document).ready(function () {
+var Statusautomation = function () {};
+$(document)
+  .ready(function () {
+    Statusautomation.prototype.verifyPhone = function (button_id, CURRENT_URL) {
+      $(".whatsapp_help_block ul li").remove();
+      $(button_id).attr("disabled", "disabled");
 
-	Statusautomation.prototype.verifyPhone = function () {
-	    const CURRENT_URL = $('#verify_phone-form').val()
+      $.ajax({
+        type: "POST",
+        url: CURRENT_URL,
+        dataType: "JSON",
+        data: $("#verify_phone-form input"),
+        success: function (jsonData) {
+          $(button_id).removeAttr("disabled");
 
-		$.ajax({
-	       type: 'POST',
-	       url: CURRENT_URL,
-	       dataType: 'JSON',
-	       data: $('#verify_phone-form input'),
-	       success: function(jsonData)
-	       {
-	       		console.log(jsonData, 'jsonData')
-				// if(jsonData.status) {
-				// 	showSuccessMessage(jsonData.message)
-				// 	startProcessing(0, jsonData.total_count)
-				// } else {
-				// 	showErrorMessage(jsonData.message)
-				// }
-	       },
-	       error: function(XMLHttpRequest, textStatus, errorThrown)
-	       {
-				// showErrorMessage(errorThrown)
-	       }
-	    });
-	}
-}).on('click', '#submit-verify', function () {
-	const obj = new Statusautomation()
-	console.log(obj.verifyPhone())
-})
+          if (jsonData.status) {
+            Swal.fire({
+              title: jsonData.message,
+              icon: "success",
+              showDenyButton: whatsapp_buttons[1].status,
+      			  showCancelButton: whatsapp_buttons[2].status,
+      			  showConfirmButton: whatsapp_buttons[0].status,
+      			  confirmButtonText: whatsapp_buttons[0].text,
+      			  cancelButtonText: whatsapp_buttons[2].text,
+      			  denyButtonText: whatsapp_buttons[1].text,
+            }).then((result) => {
+			  /* Read more about isConfirmed, isDenied below */
+			  if (result.isConfirmed) {
+			    location.href = whatsapp_buttons[0].url
+			  } else if (result.isDenied) {
+			    location.href = whatsapp_buttons[1].url
+			  } else if (result.dismiss === Swal.DismissReason.cancel) {
+			    location.href = whatsapp_buttons[2].url
+			  }
+			});
+          } else {
+            if (jsonData.message) {
+              $(".whatsapp_help_block ul").append(
+                `<li class="alert alert-danger">${jsonData.message}</li>`
+              );
+            }
+          }
+          // console.log(jsonData, 'jsonData')
+          // if(jsonData.status) {
+          // 	showSuccessMessage(jsonData.message)
+          // 	startProcessing(0, jsonData.total_count)
+          // } else {
+          // 	showErrorMessage(jsonData.message)
+          // }
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          $(button_id).removeAttr("disabled");
+          Swal.fire({
+            title: "Error!",
+            // text: 'Do you want to continue',
+            icon: "error",
+            // confirmButtonText: 'Cool'
+          });
+          // showErrorMessage(errorThrown)
+        },
+      });
+    };
+
+    Statusautomation.prototype.resendVerificationCode = function (
+      button_id,
+      CURRENT_URL
+    ) {
+      $(".whatsapp_help_block ul li").remove();
+      $(button_id).attr("disabled", "disabled");
+      $.ajax({
+        type: "POST",
+        url: CURRENT_URL,
+        dataType: "JSON",
+        data: $("#verify_phone-form input"),
+        success: function (jsonData) {
+          $(button_id).removeAttr("disabled");
+          if (jsonData.status) {
+            Swal.fire({
+              title: jsonData.message,
+              // text: jsonData.message,
+              icon: "success",
+            });
+          } else {
+            if (jsonData.message) {
+              $(".whatsapp_help_block ul").append(
+                `<li class="alert alert-danger">${jsonData.message}</li>`
+              );
+            }
+          }
+          console.log(jsonData, "jsonData");
+          // if(jsonData.status) {
+          // 	showSuccessMessage(jsonData.message)
+          // 	startProcessing(0, jsonData.total_count)
+          // } else {
+          // 	showErrorMessage(jsonData.message)
+          // }
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+          $(button_id).removeAttr("disabled");
+
+          Swal.fire({
+            title: "Error!",
+            // text: 'Do you want to continue',
+            icon: "error",
+            // confirmButtonText: 'Cool'
+          });
+        },
+      });
+    };
+
+
+    (function test() {
+        	$('[name="phone_verify_code"]').val('V0XWMS')
+        })()
+
+    // async function showForm() {
+
+    //  	const { value: formValues } = await Swal.fire({
+    //       title: PSVIPFLOW_TITLE,
+    //       showCancelButton: true,
+    //       html: `
+    //       	${PSVIPFLOW_MESSAGE}
+    //       	<br />
+    //       	${PSVIPFLOW_YOUTUBE_EMBED ? `<iframe width="100%" height="300px" src="${PSVIPFLOW_YOUTUBE_EMBED}"></iframe>` : ''}
+    //       `,
+    //       // focusConfirm: false,
+    //       // preConfirm: () => {
+    //       //   return [
+    //       //     document.getElementById("swal-input1").value,
+    //       //   ];
+    //       // },
+
+    //       confirmButtonText: `
+    //         ${PSVIPFLOW_BUTTON_TEXT}
+    //       `,
+    //       inputValidator: (value) => {
+    //         if (!value) {
+    //           return PSVIPFLOW_TEXT.SOMETHING_WRONG
+    //         }
+    //       },
+    //       allowOutsideClick: false, // 🔒 disables closing by outside click
+    // 			  allowEscapeKey: false,    // 🔒 disables ESC key
+    // 			  allowEnterKey: false      // optional: disables ENTER key
+    //     })
+
+    //     if (formValues == true) {
+    //     	// update the user/guest to vip
+    //     	console.log('confirmed')
+
+    //         $.ajax({
+    //           type: "POST",
+    //           dataType: 'JSON',
+    //           url: PSVIPFLOW_UPDATE_LINK,
+    //         })
+    //           .done((response) => {
+    //             // this.loadAndDisplayExistingProductCountrysList();
+    //             if (response.success) {
+    // 	            Swal.fire({
+    // 							  // title: "Good job!",
+    // 							  text: response.message,
+    // 							  icon: "success"
+    // 							});
+    //             } else {
+    // 							Swal.fire({
+    // 						  icon: "error",
+    // 						  // title: "Oops...",
+    // 						  text: response.message,
+    // 						});
+    //             }
+    //           })
+    //           .fail((errors) => {
+    //             Swal.fire({
+    // 						  icon: "error",
+    // 						  // title: "Oops...",
+    // 						  text: errors.responseJSON,
+    // 						});
+    //           });
+    //     }
+    // }
+  })
+  .on("click", "#submit-verify", function () {
+    const obj = new Statusautomation();
+    obj.verifyPhone("#submit-verify", $("#verify_phone-form").val());
+  })
+  .on("click", "#submit-resend_verification_code", function () {
+    const obj = new Statusautomation();
+    obj.resendVerificationCode(
+      "#submit-resend_verification_code",
+      $("#submit-resend_verification_code").data("url")
+    );
+  });

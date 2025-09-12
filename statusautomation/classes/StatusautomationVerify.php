@@ -20,14 +20,13 @@
  */
 class StatusautomationVerify extends ObjectModel
 {
-    public $id_customer
+    public $id_customer;
     public $whatsapp_number;
     public $is_verified;
 
     public static $definition = [
         'table' => 'ts_whatsapp',
         'primary' => 'id_ts_whatsapp',
-        'multilang' => true,
         'fields' => [
             'id_customer' => ['type' => self::TYPE_INT],
             'whatsapp_number' => ['type' => self::TYPE_STRING],
@@ -36,21 +35,10 @@ class StatusautomationVerify extends ObjectModel
         ],
     ];
 
-    // public static function saveBlacklist($phone_number)
-    // {
-    //     Db::getInstance()->execute('
-	// 	    INSERT INTO `' . _DB_PREFIX_ . self::$definition['table'] . '`
-	// 	    (`phone_number`, `is_blacklisted`)
-	// 	    VALUES ("' . pSQL($phone_number) . '", "YES")
-	// 	    ON DUPLICATE KEY UPDATE
-	// 	    is_blacklisted = "YES"
-	// 	');
-    // }
-
     public static function isVerified($delivery_phone_number, $is_verified = '1')
     {
         $query = new DbQuery();
-        $query->select('count(s.`whatsapp_number)');
+        $query->select('count(s.`whatsapp_number`)');
         $query->from(self::$definition['table'], 's');
         $query->where('s.`whatsapp_number` = "' . (string) $delivery_phone_number . '" OR s.`whatsapp_number` = "0' . (string) $delivery_phone_number . '"');
         $query->where('s.`is_verified` = "' . $is_verified . '"');

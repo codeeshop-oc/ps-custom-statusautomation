@@ -23,6 +23,7 @@ class StatusautomationBlacklist extends ObjectModel
     public $id_statusautomation_blacklist;
     public $phone_number;
     public $is_blacklisted;
+    public static $debug = true;
 
     public static $definition = [
         'table' => 'statusautomation_blacklist',
@@ -55,6 +56,35 @@ class StatusautomationBlacklist extends ObjectModel
 		    ON DUPLICATE KEY UPDATE
 		    is_blacklisted = "YES"
 		');
+    }
+
+    /**
+     * Find duplicate customers by WhatsApp number
+     */
+    public static function getCustomerIdsByWhatsappNumber($whatsapp_number)
+    {
+        $query = new DbQuery();
+        $query->select('pw.id_customer');
+        $query->from('ts_whatsapp', 'pw');
+        $query->where('(pw.whatsapp_number = "' . $whatsapp_number . '" OR pw.whatsapp_number = "0' . $whatsapp_number . '" )');
+        $query->groupBy('pw.id_customer');
+        if (self::$debug) {
+            print_r($query->__toString());
+            echo ';<br/>';
+        }
+
+        return array_column(Db::getInstance()->executeS($query), 'id_customer') ?? [];
+    }
+
+    public static function changeCustomerGroup($phone_number)
+    {
+        // get customers with phone_number
+        $customers = self::getCustomerIdsByWhatsappNumber($phone_number);
+        if ($customers) {
+            foreach ($customers as $id_customer) {
+                StatusautomationCustomerExtend::updateCustomerGroup($id_customer, Configuration::get('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST'));
+            }
+        }
     }
 
     public static function isBlacklisted($delivery_phone_number, $is_blacklisted = 'YES')

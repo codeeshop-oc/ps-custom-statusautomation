@@ -39,7 +39,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
-        $should_redirect = false;
+        $should_redirect = $should_register_redirect = false;
 
         if (Tools::isSubmit('submitCreate') || Tools::isSubmit('create_account')) {
             // fixed added the email
@@ -56,8 +56,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                 ->setGuestAllowed(false)
                 ->fillWith(Tools::getAllValues());
 
-            // dump((Tools::getAllValues()));die;
-
             if (Tools::isSubmit('submitCreate')) {
                 $hookResult = array_reduce(
                     Hook::exec('actionSubmitAccountBefore', [], null, true),
@@ -67,7 +65,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                     true
                 );
                 if ($hookResult && $register_form->submit()) {
-                    $should_redirect = true;
+                    $should_register_redirect = true;
                 }
             }
 
@@ -78,28 +76,99 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             ]);
 
             $this->setTemplate('module:statusautomation/views/templates/front/customer/registration.tpl');
+        } elseif (Tools::isSubmit('submitResendVerificationCode')) {
+            $ts_whatsappModule = Module::getInstanceByName('ts_whatsapp');
+            $resp = $ts_whatsappModule->checkPhoneNumberIsValid(Tools::getValue('whatsapp'));
+            $status = $resp['status'] ?? false;
+            $message = $resp['message'] ?? false;
+            $new_otp = '';
+
+            if ($status) {
+                // send otp before redirect
+                $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($this->context->customer->id);
+                $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
+                $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
+
+                $new_url = str_replace('create_account=1', 'phone_number_validate=1', $this->urls['current_url']);
+
+                $resp = $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+
+                if ($resp['status']) {
+                    $new_otp = $resp['otp'];
+                    $message = $this->trans('Successfully Sent', [], 'Modules.Statusautomation.Login.php');
+                }
+            }
+
+            $this->ajaxRender(json_encode([
+                'status' => $status,
+                'message' => $message,
+                'new_otp' => $new_otp,
+                'values' => Tools::getAllValues(),
+            ]));
+            exit;
         } elseif (Tools::isSubmit('submitVerify')) {
             // Tools::getValue('whatsapp')
             // dump(Tools::getValue('phone_verify_code'));
             // api to send code
+            $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($this->context->customer->id);
+            $status = false;
+            if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', Tools::getValue('whatsapp'), Tools::getValue('phone_verify_code', false))) {
+                $this->loginCustomerCode($this->context->customer->email);
+
+                if (empty($this->errors)) {
+                    $status = true;
+                    $message = $this->trans('Successfully Verified', [], 'Modules.Statusautomation.Login.php');
+                } else {
+                    $message = implode('<br/>', $this->errors);
+                }
+            } else {
+                $message = $this->trans('Invalid OTP. Please try again.', [], 'Modules.Statusautomation.Login.php');
+            }
 
             $this->ajaxRender(json_encode([
-                'status' => true,
+                'status' => $status,
+                'message' => $message,
                 'values' => Tools::getAllValues(),
             ]));
             exit;
-        } elseif (Tools::isSubmit('w_validate')) {
+        } elseif (Tools::isSubmit('phone_number_validate')) {
+            $this->context->controller->registerJavascript(
+                'module-sweetalert-lib', // A unique ID for the script
+                'modules/' . $this->module->name . '/views/js/sweetalert.js', // The file path
+                ['position' => 'bottom', 'priority' => 200] // An array of options
+            );
+
             $login_form = $this->makeLoginForm()->fillWith(
                 Tools::getAllValues()
             );
 
-            $whatsapp_number = $this->getWhatsappNumber($this->context->customer->id);
+            $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($this->context->customer->id);
+            $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
+            $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
             $URL = $this->context->link->getModuleLink('statusautomation', 'login', ['validate_verify' => '1']);
+            $resend_verification_code = $this->context->link->getModuleLink('statusautomation', 'login', ['submitResendVerificationCode' => '1']);
+
+            $buttons = [];
+            for ($i = 0; $i < 3; ++$i) {
+                $buttons[] = [
+                    'status' => (bool) Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
+                    'text' => Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
+                    'url' => $this->getRedirectURL(Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i), Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i)),
+                ];
+            }
+
+            Media::addJsDef([
+                'whatsapp_buttons' => $buttons,
+            ]);
+
+            // dump($buttons);die;
 
             $this->context->smarty->assign([
-                'action' => $URL,
+                'whatsapp_verify_url' => $URL,
+                'whatsapp_resend_verification_code_url' => $resend_verification_code,
                 'whatsapp_number' => $whatsapp_number,
                 'prefix_whatsapp_number' => self::PREFIX_WHATSAPP_NUMBER,
+                // 'whatsapp_buttons' => $buttons,
                 // 'login_form' => $login_form->getProxy(),
             ]);
 
@@ -124,29 +193,19 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
         parent::initContent();
 
-        if ($should_redirect && !$this->ajax) {
-            $back = urldecode(Tools::getValue('back'));
+        if ($should_register_redirect) {
+            // $back = urldecode(Tools::getValue('back'));
 
-            $new_url = str_replace('create_account=1', 'w_validate=1', $this->urls['current_url']);
+            // send otp before redirect
+            $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($this->context->customer->id);
+            $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
+            $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
+
+            $new_url = str_replace('create_account=1', 'phone_number_validate=1', $this->urls['current_url']);
+
+            $this->sendOTPReq($id_whatsapp, $whatsapp_number);
 
             return $this->redirectWithNotifications($new_url);
-
-            // dump($back);die;
-            // if (Tools::urlBelongsToShop($back)) {
-            //     // Checks to see if "back" is a fully qualified
-            //     // URL that is on OUR domain, with the right protocol
-            //     return $this->redirectWithNotifications($back);
-            // }
-
-            // // Well we're not redirecting to a URL,
-            // // so...
-            // if ($this->authRedirection) {
-            //     // We may need to go there if defined
-            //     return $this->redirectWithNotifications($this->authRedirection);
-            // }
-
-            // // go home
-            // return $this->redirectWithNotifications(__PS_BASE_URI__);
         }
     }
 
@@ -156,12 +215,12 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
         if (Tools::isSubmit('submitCreate') || Tools::isSubmit('create_account')) {
             $breadcrumb['links'][] = [
-                'title' => $this->trans('Create an account', [], 'Shop.Theme.Customeraccount'),
+                'title' => $this->trans('Create an account', [], 'Modules.Statusautomation.Login.php'),
                 'url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
             ];
         } else {
             $breadcrumb['links'][] = [
-                'title' => $this->trans('Log in to your account', [], 'Shop.Theme.Customeraccount'),
+                'title' => $this->trans('Log in to your account', [], 'Modules.Statusautomation.Login.php'),
                 'url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
             ];
         }
@@ -169,16 +228,21 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         return $breadcrumb;
     }
 
-    public static function getWhatsappNumber($id_customer = null)
+    private function sendOTPReq($id_whatsapp, $whatsapp_number)
     {
-        $query = new DbQuery();
-        $query->select('s.whatsapp_number');
-        $query->from('ts_whatsapp', 's');
-        $query->where('s.`id_customer` = ' . (int) $id_customer);
+        // save and send otp
+        $verifyObj = new StatusautomationWhatsappVerify();
+        $verifyObj->id_whatsapp = (int) $id_whatsapp;
+        $verifyObj->phone_number = $whatsapp_number;
+        $verifyObj->code = StatusautomationWhatsappVerify::generateOtpCode(6);
+        $verifyObj->save();
 
-        $whatsapp_number = Db::getInstance()->getValue($query);
+        $status = StatusautomationOTPApi::send($whatsapp_number, $verifyObj->code);
 
-        return $whatsapp_number ?? false;
+        return [
+            'status' => $status,
+            'otp' => $verifyObj->code,
+        ];
     }
 
     public function getTemplateVarPage()
@@ -191,14 +255,80 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         return $params;
     }
 
-    public function getRedirectURL()
+    private function getRedirectURL($type, $url)
     {
-        $homeUrl = $this->context->link->getPageLink('index', true);
-        $contactUsUrl = $this->context->link->getPageLink('contact', true);
-        $myAccountUrl = $this->context->link->getPageLink('my-account', true);
-        dump($homeUrl);
-        dump($myAccountUrl);
-        dump($contactUsUrl);
-        exit;
+        $link = $this->context->link;
+        switch ($type) {
+            case 'MY_HOMEPAGE':
+                $url = $link->getPageLink('index', true);
+                break;
+
+            case 'CONTACT_US':
+                $url = $link->getPageLink('contact', true);
+                break;
+            case 'LAST_PRODUCT_SEEN':
+                if ($id_product = $this->module->getLastVisitedProductId()) {
+                    $url = $link->getProductLink($id_product);
+                }
+                break;
+            case 'MY_ACCOUNT':
+                $url = $link->getPageLink('my-account', true);
+                break;
+
+            case 'CUSTOM':
+            default:
+                // code...
+                break;
+        }
+
+        // if url is empty goto myaccount page
+        if (empty($url)) {
+            $url = $link->getPageLink('my-account', true);
+        }
+
+        return $url;
     }
+
+    public function loginCustomerCode($email)
+    {
+        Hook::exec('actionAuthenticationBefore');
+
+        $customer = new StatusautomationCustomerExtend();
+        $authentication = $customer->getByEmailLogin($email, false);
+
+        if (isset($authentication->active) && !$authentication->active) {
+            $this->errors[] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Shop.Notifications.Error');
+        } elseif ($authentication->is_guest == 1) {
+            // set customer group to customer
+            StatusautomationCustomerExtend::updateCustomerGroup($this->context->customer->id, 3);
+            $authentication = new Customer($authentication->id);
+            // updated it to customer group
+            $authentication->is_guest = 0;
+            $authentication->update();
+        }
+
+        if (!$authentication || !$authentication->id) {
+            $this->errors[] = $this->translator->trans('Authentication failed.', [], 'Shop.Notifications.Error');
+        } else {
+            $this->context->updateCustomer($authentication);
+            Hook::exec('actionAuthentication', ['customer' => $this->context->customer]);
+            // dump($authentication);die;
+
+            // Login information have changed, so we check if the cart rules still apply
+            CartRule::autoRemoveFromCart($this->context);
+            CartRule::autoAddToCart($this->context);
+            // $this->context->cookie->write();
+        }
+
+        return true;
+    }
+
+    // private function getErrorPageRedirect()
+    // {
+    //     if (!Tools::getIsset('secret') && Tools::getIsset('user') && Configuration::get('LOGINWITHCUSTOMERIDOREMAIL_QUICK_LOGIN_ERROR_REDIRECT_TO_PAGE')) {
+    //         exit($this->redirectWithNotifications(Configuration::get('LOGINWITHCUSTOMERIDOREMAIL_QUICK_LOGIN_ERROR_REDIRECT_TO_PAGE')));
+    //     } else {
+    //         exit($this->redirectWithNotifications('index'));
+    //     }
+    // }
 }

@@ -255,6 +255,7 @@ class FileAdminController extends FrameworkBundleAdminController
 
                     if ($this->isPhoneNumberValid($phone_number)) {
                         \StatusautomationBlacklist::saveBlacklist($phone_number);
+                        \StatusautomationBlacklist::changeCustomerGroup($phone_number);
                     }
 
                     if (!$new_limit--) {

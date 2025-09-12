@@ -211,6 +211,17 @@ class Statusautomation extends Module
             [
                 'type' => 'select',
                 'class' => 'chosen',
+                'label' => $this->l('Customer Group (BlackList)'),
+                'name' => 'STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST',
+                'options' => [
+                    'query' => $this->getCustomerGroups(),
+                    'id' => 'id',
+                    'name' => 'name',
+                ],
+            ],
+            [
+                'type' => 'select',
+                'class' => 'chosen',
                 'label' => $this->trans('Order Status (BlackList)', [], 'Modules.Statusautomation.Statusautomation.php'),
                 'name' => 'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST',
                 'options' => [
@@ -268,6 +279,10 @@ class Statusautomation extends Module
                             'name' => $this->trans('Homepage', [], 'Modules.Statusautomation.Statusautomation.php'),
                         ],
                         [
+                            'id' => 'CONTACT_US',
+                            'name' => $this->trans('Contact Us', [], 'Modules.Statusautomation.Statusautomation.php'),
+                        ],
+                        [
                             'id' => 'LAST_PRODUCT_SEEN',
                             'name' => $this->trans('Last Product Seen', [], 'Modules.Statusautomation.Statusautomation.php'),
                         ],
@@ -322,6 +337,7 @@ class Statusautomation extends Module
             'STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST' => Tools::getValue('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST', Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')),
             'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST' => Tools::getValue('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST', Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST')),
             'STATUSAUTOMATION_PHASE_1_BATCH_SIZE' => Tools::getValue('STATUSAUTOMATION_PHASE_1_BATCH_SIZE', Configuration::get('STATUSAUTOMATION_PHASE_1_BATCH_SIZE')),
+            'STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST' => Tools::getValue('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST', Configuration::get('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST')),
         ];
 
         for ($i = 0; $i < 3; ++$i) {
@@ -434,6 +450,7 @@ class Statusautomation extends Module
         $this->context->controller->addCSS($this->_path . 'views/css/front.css');
 
         $this->saveLastVisitedProductId();
+        // dump($this->context->customer->isLogged());die;
     }
 
     // save last visited product id
@@ -445,6 +462,12 @@ class Statusautomation extends Module
                 Context::getContext()->cookie->__set('statusautomation_last_viewed_product', $productId);
             }
         }
+    }
+
+    // get last visited product id
+    public function getLastVisitedProductId()
+    {
+        return Context::getContext()->cookie->__get('statusautomation_last_viewed_product') ?? false;
     }
 
     public function hookModuleRoutes($params)
@@ -631,7 +654,6 @@ class Statusautomation extends Module
 
             // is a blacklisted number
             if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
-
                 $is_blacklisted_number = false;
                 if (!empty($address->phone)) {
                     $is_blacklisted_number = StatusautomationBlacklist::isBlacklisted($address->phone);
@@ -661,7 +683,7 @@ class Statusautomation extends Module
         $data[] = [
             'id' => '',
             'val' => '',
-            'name' => $this->trans('--Select--', [], 'Modules.Psvipflow.Psvipflow.php'),
+            'name' => $this->trans('--Select--', [], 'Modules.Statusautomation.Statusautomation.php'),
         ];
 
         foreach ($orderStates as $order_state) {
@@ -690,5 +712,26 @@ class Statusautomation extends Module
         }
 
         return $payment_methods;
+    }
+
+    private function getCustomerGroups()
+    {
+        $data = [];
+        $id_lang = Context::getContext()->language->id;
+        $sql = '
+            SELECT a.id_group as id, gl.name
+            FROM `' . _DB_PREFIX_ . 'group` a
+            LEFT JOIN `' . _DB_PREFIX_ . 'group_lang` gl ON(gl.id_group = a.id_group)
+            WHERE id_lang = "' . $id_lang . '"';
+
+        foreach (Db::getInstance()->executeS($sql) as $row) {
+            $data[] = [
+                'id' => $row['id'],
+                'val' => $row['id'],
+                'name' => $row['name'],
+            ];
+        }
+
+        return $data;
     }
 }
