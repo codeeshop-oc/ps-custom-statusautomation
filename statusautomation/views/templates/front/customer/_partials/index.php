@@ -1,4 +1,6 @@
-{**
+<?php
+
+/**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
  *
@@ -15,22 +17,13 @@
  * @author    PrestaShop SA and Contributors <contact@prestashop.com>
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
- *}
-{extends file='page.tpl'}
+ */
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 
-{block name='page_title'}
-  {l s='Create an account' d='Shop.Theme.Customeraccount'}
-{/block}
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
 
-{block name='page_content'}
-    {block name='register_form_container'}
-      {$hook_create_account_top nofilter}
-      <section class="register-form">
-        <p>{l s='Already have an account?' d='Shop.Theme.Customeraccount'} <a href="{$authentication_url}">{l s='Log in instead!' d='Shop.Theme.Customeraccount'}</a></p>
-        {if !empty($phone_number_already_exist)}
-          <p style="display: none" id="phone_number_already_exist">{$phone_number_already_exist}</p>
-        {/if}
-        {render file='customer/_partials/customer-form.tpl' ui=$register_form}
-      </section>
-    {/block}
-{/block}
+header('Location: ../');
+exit;

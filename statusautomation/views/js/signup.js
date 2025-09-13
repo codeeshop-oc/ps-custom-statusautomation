@@ -23,6 +23,25 @@ $(document).ready(function () {
 	// remove required
 	$('[name="email"]').removeAttr('required')
 	$('[name="email"]').val('')
+	$('.cleardanger').remove()
+
+	if ($('#phone_number_already_exist').length) {
+
+		if ($('[name="email"]').next('.help-block').length) {
+			$('[name="email"]').next('.help-block').remove()
+			$('[name="email"]').parents('.form-group.has-error').removeClass('has-error')
+		}
+
+		// has-error
+		$('[name="whatsapp"]').parents('.form-group.row').addClass('has-error')
+		$('[name="whatsapp"]').parent().next().after(`
+			<div class="help-block cleardanger">
+			      <ul>
+	                  <li class="alert alert-danger">${$('#phone_number_already_exist').text()}</li>
+	              </ul>
+			  </div>`)
+		$('#phone_number_already_exist').remove()
+	}
 
 	const emailOptionFormEl = $('[name="email"]').parents('.form-group')
 	emailOptionFormEl.hide()

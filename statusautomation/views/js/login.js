@@ -37,21 +37,21 @@ $(document)
               title: jsonData.message,
               icon: "success",
               showDenyButton: whatsapp_buttons[1].status,
-      			  showCancelButton: whatsapp_buttons[2].status,
-      			  showConfirmButton: whatsapp_buttons[0].status,
-      			  confirmButtonText: whatsapp_buttons[0].text,
-      			  cancelButtonText: whatsapp_buttons[2].text,
-      			  denyButtonText: whatsapp_buttons[1].text,
+              showCancelButton: whatsapp_buttons[2].status,
+              showConfirmButton: whatsapp_buttons[0].status,
+              confirmButtonText: whatsapp_buttons[0].text,
+              cancelButtonText: whatsapp_buttons[2].text,
+              denyButtonText: whatsapp_buttons[1].text,
             }).then((result) => {
-			  /* Read more about isConfirmed, isDenied below */
-			  if (result.isConfirmed) {
-			    location.href = whatsapp_buttons[0].url
-			  } else if (result.isDenied) {
-			    location.href = whatsapp_buttons[1].url
-			  } else if (result.dismiss === Swal.DismissReason.cancel) {
-			    location.href = whatsapp_buttons[2].url
-			  }
-			});
+              /* Read more about isConfirmed, isDenied below */
+              if (result.isConfirmed) {
+                location.href = whatsapp_buttons[0].url;
+              } else if (result.isDenied) {
+                location.href = whatsapp_buttons[1].url;
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                location.href = whatsapp_buttons[2].url;
+              }
+            });
           } else {
             if (jsonData.message) {
               $(".whatsapp_help_block ul").append(
@@ -59,13 +59,6 @@ $(document)
               );
             }
           }
-          // console.log(jsonData, 'jsonData')
-          // if(jsonData.status) {
-          // 	showSuccessMessage(jsonData.message)
-          // 	startProcessing(0, jsonData.total_count)
-          // } else {
-          // 	showErrorMessage(jsonData.message)
-          // }
         },
         error: function (XMLHttpRequest, textStatus, errorThrown) {
           $(button_id).removeAttr("disabled");
@@ -106,13 +99,6 @@ $(document)
               );
             }
           }
-          console.log(jsonData, "jsonData");
-          // if(jsonData.status) {
-          // 	showSuccessMessage(jsonData.message)
-          // 	startProcessing(0, jsonData.total_count)
-          // } else {
-          // 	showErrorMessage(jsonData.message)
-          // }
         },
         error: function (XMLHttpRequest, textStatus, errorThrown) {
           $(button_id).removeAttr("disabled");
@@ -127,75 +113,20 @@ $(document)
       });
     };
 
+    Statusautomation.prototype.addWhatsappButtonOnLoginPage = function () {
+      const current_value = $('[name="whatsapp"]').val();
+      $('[name="whatsapp"]').replaceWith(
+        `<div class="input-group"><span class="input-group-addon">+212</span><input class="form-control" name="whatsapp" type="text" value="${current_value}" required=""></div>`
+      );
+    };
 
     (function test() {
-        	$('[name="phone_verify_code"]').val('V0XWMS')
-        })()
+      // $('[name="phone_verify_code"]').val("V0XWMS");
+    })();
 
-    // async function showForm() {
-
-    //  	const { value: formValues } = await Swal.fire({
-    //       title: PSVIPFLOW_TITLE,
-    //       showCancelButton: true,
-    //       html: `
-    //       	${PSVIPFLOW_MESSAGE}
-    //       	<br />
-    //       	${PSVIPFLOW_YOUTUBE_EMBED ? `<iframe width="100%" height="300px" src="${PSVIPFLOW_YOUTUBE_EMBED}"></iframe>` : ''}
-    //       `,
-    //       // focusConfirm: false,
-    //       // preConfirm: () => {
-    //       //   return [
-    //       //     document.getElementById("swal-input1").value,
-    //       //   ];
-    //       // },
-
-    //       confirmButtonText: `
-    //         ${PSVIPFLOW_BUTTON_TEXT}
-    //       `,
-    //       inputValidator: (value) => {
-    //         if (!value) {
-    //           return PSVIPFLOW_TEXT.SOMETHING_WRONG
-    //         }
-    //       },
-    //       allowOutsideClick: false, // 🔒 disables closing by outside click
-    // 			  allowEscapeKey: false,    // 🔒 disables ESC key
-    // 			  allowEnterKey: false      // optional: disables ENTER key
-    //     })
-
-    //     if (formValues == true) {
-    //     	// update the user/guest to vip
-    //     	console.log('confirmed')
-
-    //         $.ajax({
-    //           type: "POST",
-    //           dataType: 'JSON',
-    //           url: PSVIPFLOW_UPDATE_LINK,
-    //         })
-    //           .done((response) => {
-    //             // this.loadAndDisplayExistingProductCountrysList();
-    //             if (response.success) {
-    // 	            Swal.fire({
-    // 							  // title: "Good job!",
-    // 							  text: response.message,
-    // 							  icon: "success"
-    // 							});
-    //             } else {
-    // 							Swal.fire({
-    // 						  icon: "error",
-    // 						  // title: "Oops...",
-    // 						  text: response.message,
-    // 						});
-    //             }
-    //           })
-    //           .fail((errors) => {
-    //             Swal.fire({
-    // 						  icon: "error",
-    // 						  // title: "Oops...",
-    // 						  text: errors.responseJSON,
-    // 						});
-    //           });
-    //     }
-    // }
+    (function initProcess() {
+      Statusautomation.prototype.addWhatsappButtonOnLoginPage();
+    })();
   })
   .on("click", "#submit-verify", function () {
     const obj = new Statusautomation();

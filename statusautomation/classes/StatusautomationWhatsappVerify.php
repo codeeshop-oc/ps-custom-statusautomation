@@ -84,4 +84,9 @@ class StatusautomationWhatsappVerify extends ObjectModel
 
         return ($otp == $whatsapp_number) ?? false;
     }
+
+    public function deleteAllOTP($phone_number)
+    {
+        return Db::getInstance()->delete(self::$definition['table'], '`phone_number` = "' . (string) $phone_number . '" OR `phone_number` = "0' . (string) $phone_number . '"');
+    }
 }

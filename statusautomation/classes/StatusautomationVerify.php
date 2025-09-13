@@ -41,7 +41,10 @@ class StatusautomationVerify extends ObjectModel
         $query->select('count(s.`whatsapp_number`)');
         $query->from(self::$definition['table'], 's');
         $query->where('s.`whatsapp_number` = "' . (string) $delivery_phone_number . '" OR s.`whatsapp_number` = "0' . (string) $delivery_phone_number . '"');
-        $query->where('s.`is_verified` = "' . $is_verified . '"');
+
+        if ($is_verified != null) {
+            $query->where('s.`is_verified` = "' . $is_verified . '"');
+        }
 
         $whatsapp_number = Db::getInstance()->getValue($query);
 

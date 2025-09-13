@@ -33,7 +33,7 @@
 					</label>
 					<div class="col-md-6">
 						<div class="my-sm-2">{l s='WhatsApp Number' d='Modules.Statusautomation.Whatsapp_validate'}</div>
-						<div class="input-group"><span class="input-group-addon">{$prefix_whatsapp_number}</span><input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required=""></div>
+						<input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required="">
 
 						{*
 						<span class="form-control-comment hidden">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}
@@ -66,7 +66,7 @@
 			</section>
 
 			<footer class="form-footer text-sm-center clearfix">
-		        <input type="hidden" name="submitVerify" value="1">
+		        <input type="hidden" name="{$submitName}" value="1">
 
 		        <button id="submit-verify" class="btn btn-primary" data-link-action="sign-in" type="button">
 		            Verify

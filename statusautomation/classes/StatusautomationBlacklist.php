@@ -23,7 +23,7 @@ class StatusautomationBlacklist extends ObjectModel
     public $id_statusautomation_blacklist;
     public $phone_number;
     public $is_blacklisted;
-    public static $debug = true;
+    public static $debug = false;
 
     public static $definition = [
         'table' => 'statusautomation_blacklist',
@@ -74,6 +74,47 @@ class StatusautomationBlacklist extends ObjectModel
         }
 
         return array_column(Db::getInstance()->executeS($query), 'id_customer') ?? [];
+    }
+
+    /**
+     * Find duplicate customers by WhatsApp number
+     */
+    public static function getOneCustomerIdByWhatsappNumber($whatsapp_number)
+    {
+        $query = new DbQuery();
+        $query->select('pw.id_customer');
+        $query->from('ts_whatsapp', 'pw');
+        $query->where('(pw.whatsapp_number = "' . $whatsapp_number . '" OR pw.whatsapp_number = "0' . $whatsapp_number . '" )');
+        $query->groupBy('pw.id_customer');
+        if (self::$debug) {
+            print_r($query->__toString());
+            echo ';<br/>';
+        }
+
+        $rows = array_column(Db::getInstance()->executeS($query), 'id_customer');
+        $best_id_customer = false;
+        foreach ($rows as $id_customer) {
+            $customer = new Customer($id_customer);
+            if ($customer->id_default_group == Configuration::get('PSVIPFLOW_CUSTOMER_GROUP_ID')) {
+                $best_id_customer = $id_customer;
+                break;
+            }
+
+            if (StatusautomationVerify::getOrderCount($id_customer)) {
+                $best_id_customer = $id_customer;
+                break;
+            }
+
+            if ($customer->id_default_group != Configuration::get('PS_GUEST_GROUP')) {
+                $best_id_customer = $id_customer;
+            }
+        }
+
+        if ($best_id_customer == false && !empty($rows)) {
+            $best_id_customer = $rows[0];
+        }
+
+        return (int) $best_id_customer;
     }
 
     public static function changeCustomerGroup($phone_number)
