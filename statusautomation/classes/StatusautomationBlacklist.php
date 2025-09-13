@@ -47,14 +47,14 @@ class StatusautomationBlacklist extends ObjectModel
         ],
     ];
 
-    public static function saveBlacklist($phone_number)
+    public static function saveBlacklist($phone_number, $is_blacklisted = 'YES')
     {
         Db::getInstance()->execute('
 		    INSERT INTO `' . _DB_PREFIX_ . self::$definition['table'] . '`
 		    (`phone_number`, `is_blacklisted`)
-		    VALUES ("' . pSQL($phone_number) . '", "YES")
+		    VALUES ("' . pSQL($phone_number) . '", "' . $is_blacklisted . '")
 		    ON DUPLICATE KEY UPDATE
-		    is_blacklisted = "YES"
+		    is_blacklisted = "' . $is_blacklisted . '"
 		');
     }
 

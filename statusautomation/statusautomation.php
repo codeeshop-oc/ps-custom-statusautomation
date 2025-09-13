@@ -169,6 +169,7 @@ class Statusautomation extends Module
                     'id' => 'id',
                     'name' => 'name',
                 ],
+                'tab' => 'general',
             ],
             [
                 'type' => 'switch',
@@ -230,6 +231,7 @@ class Statusautomation extends Module
                     'id' => 'id',
                     'name' => 'name',
                 ],
+                'tab' => 'general',
             ],
             [
                 'type' => 'select',
@@ -485,7 +487,7 @@ class Statusautomation extends Module
 
     public function hookModuleRoutes($params)
     {
-        if (!Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
+        if (!Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY') && !Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
             return [];
         }
 
@@ -503,11 +505,46 @@ class Statusautomation extends Module
 
     public function hookActionCustomerGridDefinitionModifier($params)
     {
+        if (!Module::isEnabled($this->name)) {
+            return;
+        }
+
         $definition = $params['definition'];
         $filters = $definition->getFilters();
         $columns = $definition->getColumns();
 
-        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
+        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
+            $definition
+                ->getColumns()
+                ->addAfter(
+                    'lastname',
+                    (new DataColumn('is_blacklist_order_field'))
+                        ->setName($this->trans('Is Blacklist (Orders)', [], 'Admin.Global'))
+                        ->setOptions([
+                            'clickable' => true,
+                            'sortable' => false,
+                            'field' => 'is_blacklist_order_field',
+                        ])
+                )
+                ->addAfter(
+                    'lastname',
+                    (new ToggleColumn('is_blacklist_field'))
+                        ->setName($this->trans('Is Blacklist', [], 'Admin.Global'))
+                        ->setOptions([
+                            'field' => 'is_blacklist_field',
+                            'route' => 'statusautomation_update_is_blacklist_toggle',
+                            'primary_field' => 'id_customer',
+                            'route_param_name' => 'customerId',
+                        ])
+                );
+
+            $filters->add(
+                (new Filter('is_blacklist_field', YesAndNoChoiceType::class))
+                    ->setAssociatedColumn('is_blacklist_field')
+            );
+        }
+
+        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $definition
                 ->getColumns()
                 ->addAfter(
@@ -527,26 +564,6 @@ class Statusautomation extends Module
                     ->setAssociatedColumn('is_verified_field')
             );
         }
-
-        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
-            $definition
-                ->getColumns()
-                ->addAfter(
-                    'lastname',
-                    (new DataColumn('is_blacklist_field'))
-                        ->setName($this->trans('Is Blacklist (Orders)', [], 'Admin.Global'))
-                        ->setOptions([
-                            'clickable' => true,
-                            'sortable' => false,
-                            'field' => 'is_blacklist_field',
-                        ])
-                );
-
-            // $filters->add(
-            //     (new Filter('is_blacklist_field', YesAndNoChoiceType::class))
-            //         ->setAssociatedColumn('is_blacklist_field')
-            // );
-        }
     }
 
     /**
@@ -564,7 +581,7 @@ class Statusautomation extends Module
 
         $searchQueryBuilder = $params['search_query_builder'];
         $searchCriteria = $params['search_criteria'];
-
+        $check_condition = false;
         if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $searchQueryBuilder->addSelect(
                 'IF(whatsapp.`is_verified` = "1", 1, 0) as `is_verified_field`'
@@ -579,6 +596,29 @@ class Statusautomation extends Module
                 );
             }
 
+            $check_condition = true;
+        }
+
+        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
+            $searchQueryBuilder->addSelect(
+                'IF(blist.`is_blacklisted` = "YES", 1, 0) as `is_blacklist_field`'
+            );
+
+            $searchQueryBuilder->addSelect(
+                '(SELECT COUNT(inner_o.id_order) FROM `' . pSQL(_DB_PREFIX_) . 'orders` inner_o WHERE inner_o.id_customer = whatsapp.id_customer AND inner_o.current_state = ' . Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_BLACKLIST') . ') as `is_blacklist_order_field`'
+            );
+
+            $searchQueryBuilder->leftJoin(
+                'c',
+                '`' . pSQL(_DB_PREFIX_) . 'statusautomation_blacklist`',
+                'blist',
+                'blist.`phone_number` = whatsapp.`whatsapp_number`'
+            );
+
+            $check_condition = true;
+        }
+
+        if ($check_condition) {
             foreach ($searchCriteria->getFilters() as $filterName => $filterValue) {
                 if ('is_verified_field' === $filterName) {
                     $searchQueryBuilder->setParameter('is_verified_field', $filterValue);
@@ -588,21 +628,16 @@ class Statusautomation extends Module
                     }
 
                     $searchQueryBuilder->andWhere('(' . $condition . ' whatsapp.is_verified = :is_verified_field)');
+                } elseif ('is_blacklist_field' === $filterName) {
+                    $searchQueryBuilder->setParameter('is_blacklist_field', $filterValue == 1 ? 'YES' : 'NO');
+                    $condition = '';
+                    if ($filterValue == 0) {
+                        $condition = 'blist.is_blacklisted is null OR ';
+                    }
+
+                    $searchQueryBuilder->andWhere('(' . $condition . ' blist.is_blacklisted = :is_blacklist_field)');
                 }
             }
-        }
-
-        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
-            $searchQueryBuilder->addSelect(
-                'IF(blist.`is_blacklisted`, CONCAT((SELECT COUNT(*) FROM `ps_orders` inner_o WHERE inner_o.id_customer = whatsapp.id_customer)), "-") as `is_blacklist_field`'
-            );
-
-            $searchQueryBuilder->leftJoin(
-                'c',
-                '`' . pSQL(_DB_PREFIX_) . 'statusautomation_blacklist`',
-                'blist',
-                'blist.`phone_number` = whatsapp.`whatsapp_number`'
-            );
         }
     }
 
@@ -633,6 +668,10 @@ class Statusautomation extends Module
 
     public function hookAdditionalCustomerFormFields($params)
     {
+        if (!Module::isEnabled($this->name)) {
+            return;
+        }
+
         if (in_array(Tools::getValue('controller'), ['login']) && Tools::getValue('module') == 'statusautomation') {
             if (Tools::getValue('create_account') == '1') {
                 foreach (array_keys($params['fields']) as $key) {
@@ -662,14 +701,6 @@ class Statusautomation extends Module
             } else {
             }
         }
-
-        // dump(Tools::getAllValues());
-        // die;
-        // if (!Configuration::get('BILLINGCUSTOMIZE_LIVE_CUSTOMER_GROUP_SELECTION_MODE')) {
-        //     return [];
-        // }
-
-        // dump($params['fields']);die;
 
         return [];
     }

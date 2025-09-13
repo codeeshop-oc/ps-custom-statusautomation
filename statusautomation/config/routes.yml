@@ -26,3 +26,10 @@ statusautomation_update_is_verified_toggle:
     _controller: 'PrestaShop\Module\Statusautomation\Controller\VerifiedStatusController::updateStatusAction'
     _legacy_controller: AdminCustomers # Optional, just for legacy links
     _legacy_link: AdminCustomers:updateCustomerGroup
+statusautomation_update_is_blacklist_toggle:
+  path: /statusautomation/customers/{customerId}/update-is-blacklist
+  methods: [GET, POST]
+  defaults:
+    _controller: 'PrestaShop\Module\Statusautomation\Controller\BlackListStatusController::updateStatusAction'
+    _legacy_controller: AdminCustomers # Optional, just for legacy links
+    _legacy_link: AdminCustomers:updateCustomerGroup
