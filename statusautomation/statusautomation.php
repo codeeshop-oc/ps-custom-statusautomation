@@ -510,45 +510,13 @@ class Statusautomation extends Module
         }
 
         $definition = $params['definition'];
-        $filters = $definition->getFilters();
-        $columns = $definition->getColumns();
-
-        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
-            $definition
-                ->getColumns()
-                ->addAfter(
-                    'lastname',
-                    (new DataColumn('is_blacklist_order_field'))
-                        ->setName($this->trans('Is Blacklist (Orders)', [], 'Admin.Global'))
-                        ->setOptions([
-                            'clickable' => true,
-                            'sortable' => false,
-                            'field' => 'is_blacklist_order_field',
-                        ])
-                )
-                ->addAfter(
-                    'lastname',
-                    (new ToggleColumn('is_blacklist_field'))
-                        ->setName($this->trans('Is Blacklist', [], 'Admin.Global'))
-                        ->setOptions([
-                            'field' => 'is_blacklist_field',
-                            'route' => 'statusautomation_update_is_blacklist_toggle',
-                            'primary_field' => 'id_customer',
-                            'route_param_name' => 'customerId',
-                        ])
-                );
-
-            $filters->add(
-                (new Filter('is_blacklist_field', YesAndNoChoiceType::class))
-                    ->setAssociatedColumn('is_blacklist_field')
-            );
-        }
+        $filters = $definition->getFilters();        
 
         if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $definition
                 ->getColumns()
-                ->addAfter(
-                    'lastname',
+                ->addBefore(
+                    'email',
                     (new ToggleColumn('is_verified_field'))
                         ->setName($this->trans('Is Verified', [], 'Admin.Global'))
                         ->setOptions([
@@ -562,6 +530,37 @@ class Statusautomation extends Module
             $filters->add(
                 (new Filter('is_verified_field', YesAndNoChoiceType::class))
                     ->setAssociatedColumn('is_verified_field')
+            );
+        }
+
+        if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_BLACKLIST')) {
+            $definition
+                ->getColumns()
+                ->addBefore(
+                    'email',
+                    (new ToggleColumn('is_blacklist_field'))
+                        ->setName($this->trans('Is Blacklist', [], 'Admin.Global'))
+                        ->setOptions([
+                            'field' => 'is_blacklist_field',
+                            'route' => 'statusautomation_update_is_blacklist_toggle',
+                            'primary_field' => 'id_customer',
+                            'route_param_name' => 'customerId',
+                        ])
+                )
+                ->addBefore(
+                    'email',
+                    (new DataColumn('is_blacklist_order_field'))
+                        ->setName($this->trans('Is Blacklist (Orders)', [], 'Admin.Global'))
+                        ->setOptions([
+                            'clickable' => true,
+                            'sortable' => false,
+                            'field' => 'is_blacklist_order_field',
+                        ])
+                );
+
+            $filters->add(
+                (new Filter('is_blacklist_field', YesAndNoChoiceType::class))
+                    ->setAssociatedColumn('is_blacklist_field')
             );
         }
     }
