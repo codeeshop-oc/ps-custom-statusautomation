@@ -33,6 +33,9 @@ $(document)
           $(button_id).removeAttr("disabled");
 
           if (jsonData.status) {
+            // fallback to reload page
+            $('#verify_phone-form').before(`<center><button type="button" class="btn btn-primary" onclick="window.location.reload()">${typeof TEXT_RELOAD == 'undefined' ? 'Reload' : TEXT_RELOAD}<a></center>`)
+            $('#verify_phone-form').remove()
             Swal.fire({
               title: jsonData.message,
               icon: "success",
@@ -42,6 +45,8 @@ $(document)
               confirmButtonText: whatsapp_buttons[0].text,
               cancelButtonText: whatsapp_buttons[2].text,
               denyButtonText: whatsapp_buttons[1].text,
+              allowOutsideClick: false,
+              allowEscapeKey: false,
             }).then((result) => {
               /* Read more about isConfirmed, isDenied below */
               if (result.isConfirmed) {
@@ -50,6 +55,8 @@ $(document)
                 location.href = whatsapp_buttons[1].url;
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 location.href = whatsapp_buttons[2].url;
+              } else {
+                window.location.reload()
               }
             });
           } else {

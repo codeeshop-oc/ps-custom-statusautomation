@@ -39,7 +39,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
-        $should_redirect = $should_register_redirect = false;
+        $should_register_redirect = false;
 
         if (Tools::isSubmit('order_to_login')) {
             $_POST['whatsapp'] = Tools::getValue('t_number');
@@ -55,15 +55,15 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
             $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
 
-            $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+            $response = $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
             $new_url = $this->context->link->getModuleLink('statusautomation', 'login', ['phone_number_validate' => 1, 'whatsapp' => $whatsapp_number]);
 
             $this->ajaxRender(json_encode([
-                'status' => $status,
-                'message' => $message,
+                'status' => empty($response['status']) ? $status : $response['status'],
+                'message' => empty($response['message']) ? $message : $response['message'],
                 'new_url' => $new_url,
-                'values' => Tools::getAllValues(),
+                // 'values' => Tools::getAllValues(),
             ]));
             exit;
         } elseif (Tools::isSubmit('submitCreate') || Tools::isSubmit('create_account')) {
@@ -131,7 +131,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                 $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
                 $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
 
-                $resp = $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+                $resp = $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
                 if ($resp['status']) {
                     $new_otp = $resp['otp'];
@@ -159,7 +159,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                 $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
                 $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
 
-                $resp = $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+                $resp = $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
                 if ($resp['status']) {
                     $new_otp = $resp['otp'];
@@ -269,6 +269,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             Media::addJsDef([
                 'whatsapp_buttons' => $buttons,
+                'TEXT_RELOAD' => $this->trans('Reload', [], 'Modules.Statusautomation.Login.php'),
             ]);
 
             $this->context->smarty->assign([
@@ -315,6 +316,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             Media::addJsDef([
                 'whatsapp_buttons' => $buttons,
+                'TEXT_RELOAD' => $this->trans('Reload', [], 'Modules.Statusautomation.Login.php'),
             ]);
 
             // dump($buttons);die;
@@ -331,6 +333,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             $this->setTemplate('module:statusautomation/views/templates/front/customer/whatsapp_validate.tpl');
         } else {
+            // dump('111');die;
             $login_form = $this->makeLoginForm()->fillWith(
                 Tools::getAllValues()
             );
@@ -346,7 +349,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                     $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
                     $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
 
-                    $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+                    $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
                     $new_url = $this->context->link->getModuleLink('statusautomation', 'login', ['login_whatsapp_validate' => 1]);
 
@@ -373,7 +376,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             $new_url = str_replace('create_account=1', 'phone_number_validate=1', $this->urls['current_url']);
 
-            $this->sendOTPReq($id_whatsapp, $whatsapp_number);
+            $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
             return $this->redirectWithNotifications($new_url);
         }
@@ -398,7 +401,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         return $breadcrumb;
     }
 
-    private function sendOTPReq($id_whatsapp, $whatsapp_number)
+    private function sendOTPReq($id_whatsapp, $whatsapp_number, $prefix_whatsapp_number)
     {
         // save and send otp
         $verifyObj = new StatusautomationWhatsappVerify();
@@ -409,10 +412,15 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         $verifyObj->deleteAllOTP($verifyObj->phone_number);
         $verifyObj->save();
 
-        $status = StatusautomationOTPApi::send($whatsapp_number, $verifyObj->code);
+        $send_data = StatusautomationOTPApi::send([
+            'phone_number' => $whatsapp_number,
+            'prefix_whatsapp_number' => $prefix_whatsapp_number,
+            'message' => $verifyObj->code,
+        ]);
 
         return [
-            'status' => $status,
+            'status' => $send_data['status'],
+            'message' => $send_data['message'],
             'otp' => $verifyObj->code,
         ];
     }

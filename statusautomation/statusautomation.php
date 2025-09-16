@@ -510,7 +510,7 @@ class Statusautomation extends Module
         }
 
         $definition = $params['definition'];
-        $filters = $definition->getFilters();        
+        $filters = $definition->getFilters();
 
         if (Configuration::get('STATUSAUTOMATION_PHASE_1_STATUS_PHONE_VERIFY')) {
             $definition
