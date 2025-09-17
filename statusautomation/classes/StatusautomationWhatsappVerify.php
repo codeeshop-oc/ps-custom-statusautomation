@@ -71,8 +71,7 @@ class StatusautomationWhatsappVerify extends ObjectModel
         $query->select('code');
         $query->from(self::$definition['table'], 's');
         $query->where('s.`phone_number` = "' . (string) $phone_number . '" OR s.`phone_number` = "0' . (string) $phone_number . '"');
-        $query->where('s.`id_whatsapp` = "' . $id_whatsapp . '"');
-        // $query->where('s.`code` = "' . $otp . '"');
+        $query->where('s.`id_whatsapp` = "' . $id_whatsapp . '"');        
         $query->orderBy('s.`id_ts_whatsapp_verify` DESC');
 
         if (self::$debug) {
@@ -80,9 +79,20 @@ class StatusautomationWhatsappVerify extends ObjectModel
             echo ';<br/>';
         }
 
-        $whatsapp_number = Db::getInstance()->getValue($query);
+        $query_otp_code = Db::getInstance()->getValue($query);
+        $otp = trim($otp);
 
-        return ($otp == $whatsapp_number) ?? false;
+        if (($otp && $otp == $query_otp_code) ?? false) {
+            self::deleteOne($id_whatsapp);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static function deleteOne($id_whatsapp)
+    {
+        return Db::getInstance()->delete(self::$definition['table'], '`id_whatsapp` = "' . (string) $id_whatsapp . '"');
     }
 
     public function deleteAllOTP($phone_number)

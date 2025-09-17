@@ -27,6 +27,12 @@ use Symfony\Component\HttpFoundation\Request;
 
 class VerifiedStatusController extends FrameworkBundleAdminController
 {
+    // fix ts_whatsapp module
+    public function whatsappFakeAction(Request $request, string $whatsapp_number, string $whatsapp_url): RedirectResponse
+    {
+        return $this->redirectToRoute('admin_customers_index');
+    }
+
     public function updateStatusAction(Request $request, int $customerId): RedirectResponse
     {
         if (!$customerId) {

@@ -30,12 +30,12 @@ $(document).ready(function () {
 	});
 
 	// rearranging form to top
-	(function () {
-		const ele = $('#submitOptionsmodule').parents('.panel')
-		const html = ele.prop('outerHTML')
-		ele.remove()
-		$('form#module_form').prepend(html)
-	})()
+	// (function () {
+	// 	const ele = $('#submitOptionsmodule').parents('.panel')
+	// 	const html = ele.prop('outerHTML')
+	// 	ele.remove()
+	// 	$('form#module_form').prepend(html)
+	// })()
 
 	progressBar()
 	progressBarHide()

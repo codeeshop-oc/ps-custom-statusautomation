@@ -39,6 +39,9 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        // error_reporting(E_ALL);
+        // ini_set('display_errors', 1);
+        
         $should_register_redirect = false;
 
         if (Tools::isSubmit('order_to_login')) {
@@ -57,7 +60,8 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             $response = $this->sendOTPReq($id_whatsapp, $whatsapp_number, self::PREFIX_WHATSAPP_NUMBER);
 
-            $new_url = $this->context->link->getModuleLink('statusautomation', 'login', ['phone_number_validate' => 1, 'whatsapp' => $whatsapp_number]);
+            // can be used to change customer group
+            $new_url = $this->context->link->getModuleLink('statusautomation', 'login', ['phone_number_validate' => 1, 'whatsapp' => $whatsapp_number, 'from' => 'order_to_login']);
 
             $this->ajaxRender(json_encode([
                 'status' => empty($response['status']) ? $status : $response['status'],
@@ -109,6 +113,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $this->context->smarty->assign([
                 'phone_number_already_exist' => $phone_number_already_exist,
                 'authentication_url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
+                'statusautomation_register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => 1]),
                 'register_form' => $register_form->getProxy(),
                 'hook_create_account_top' => Hook::exec('displayCustomerAccountFormTop'),
             ]);
@@ -176,17 +181,27 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             exit;
         } elseif (Tools::isSubmit('submitVerifyLogin')) {
             // api to send code
-
             $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
             $status = false;
             if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', Tools::getValue('whatsapp'), Tools::getValue('phone_verify_code', false))) {
+                if (Validate::isLoadedObject(Context::getContext()->customer)) {
+                    Context::getContext()->customer->logout();
+                }
+    
+                // update customer to VIP customer
+                $updateLink = Tools::getValue('PSVIPFLOW_UPDATE_LINK', false);
+                if ($updateLink) {
+                    @file_get_contents(base64_decode($updateLink));
+                }
+                
                 $customer = new Customer($current_customer_id);
                 $this->doOnlyLogin($customer->email);
 
                 if (empty($this->errors)) {
+
                     $status = true;
                     $message = $this->trans('Successfully Login', [], 'Modules.Statusautomation.Login.php');
                 } else {
@@ -231,7 +246,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $this->ajaxRender(json_encode([
                 'status' => $status,
                 'message' => $message,
-                'values' => Tools::getAllValues(),
+                // 'values' => Tools::getAllValues(),
             ]));
             exit;
         } elseif (Tools::isSubmit('login_whatsapp_validate')) {
@@ -257,20 +272,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
             $URL = $this->context->link->getModuleLink('statusautomation', 'login', ['validate_verify' => '1']);
             $resend_verification_code = $this->context->link->getModuleLink('statusautomation', 'login', ['submitLoginResendVerificationCode' => '1']);
-
-            $buttons = [];
-            for ($i = 0; $i < 3; ++$i) {
-                $buttons[] = [
-                    'status' => (bool) Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
-                    'text' => Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
-                    'url' => $this->getRedirectURL(Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i), Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i)),
-                ];
-            }
-
-            Media::addJsDef([
-                'whatsapp_buttons' => $buttons,
-                'TEXT_RELOAD' => $this->trans('Reload', [], 'Modules.Statusautomation.Login.php'),
-            ]);
 
             $this->context->smarty->assign([
                 'whatsapp_verify_url' => $URL,
@@ -304,20 +305,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
             $URL = $this->context->link->getModuleLink('statusautomation', 'login', ['validate_verify' => '1']);
             $resend_verification_code = $this->context->link->getModuleLink('statusautomation', 'login', ['submitResendVerificationCode' => '1']);
-
-            $buttons = [];
-            for ($i = 0; $i < 3; ++$i) {
-                $buttons[] = [
-                    'status' => (bool) Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
-                    'text' => Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
-                    'url' => $this->getRedirectURL(Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i), Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i)),
-                ];
-            }
-
-            Media::addJsDef([
-                'whatsapp_buttons' => $buttons,
-                'TEXT_RELOAD' => $this->trans('Reload', [], 'Modules.Statusautomation.Login.php'),
-            ]);
 
             // dump($buttons);die;
 
@@ -358,6 +345,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             }
 
             $this->context->smarty->assign([
+                'statusautomation_register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => 1]),        
                 'login_form' => $login_form->getProxy(),
             ]);
 
@@ -369,7 +357,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         if ($should_register_redirect) {
             // $back = urldecode(Tools::getValue('back'));
 
-            // send otp before redirect
+            // send otp before redirect            
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($this->context->customer->id);
             $id_whatsapp = $whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : 0;
             $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
@@ -412,6 +400,8 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         $verifyObj->deleteAllOTP($verifyObj->phone_number);
         $verifyObj->save();
 
+        // remove
+        // $send_data = ['status' => true, 'message' => 'sent'];
         $send_data = StatusautomationOTPApi::send([
             'phone_number' => $whatsapp_number,
             'prefix_whatsapp_number' => $prefix_whatsapp_number,
@@ -433,40 +423,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         $params['body_classes']['page-authentication'] = true;
 
         return $params;
-    }
-
-    private function getRedirectURL($type, $url)
-    {
-        $link = $this->context->link;
-        switch ($type) {
-            case 'MY_HOMEPAGE':
-                $url = $link->getPageLink('index', true);
-                break;
-
-            case 'CONTACT_US':
-                $url = $link->getPageLink('contact', true);
-                break;
-            case 'LAST_PRODUCT_SEEN':
-                if ($id_product = $this->module->getLastVisitedProductId()) {
-                    $url = $link->getProductLink($id_product);
-                }
-                break;
-            case 'MY_ACCOUNT':
-                $url = $link->getPageLink('my-account', true);
-                break;
-
-            case 'CUSTOM':
-            default:
-                // code...
-                break;
-        }
-
-        // if url is empty goto myaccount page
-        if (empty($url)) {
-            $url = $link->getPageLink('my-account', true);
-        }
-
-        return $url;
     }
 
     public function doOnlyLogin($email)

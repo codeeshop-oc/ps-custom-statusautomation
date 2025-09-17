@@ -33,3 +33,11 @@ statusautomation_update_is_blacklist_toggle:
     _controller: 'PrestaShop\Module\Statusautomation\Controller\BlackListStatusController::updateStatusAction'
     _legacy_controller: AdminCustomers # Optional, just for legacy links
     _legacy_link: AdminCustomers:updateCustomerGroup
+
+external_whatsapp_chat:
+  path: /statusautomation/ts_whatsapp/customers/whatsapp
+  defaults:
+    _controller: 'PrestaShop\Module\Statusautomation\Controller\VerifiedStatusController::whatsappFakeAction'
+  requirements:
+    whatsapp_number: \s+
+    whatsapp_url: \s+

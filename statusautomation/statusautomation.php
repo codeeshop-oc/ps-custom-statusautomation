@@ -103,7 +103,11 @@ class Statusautomation extends Module
             $output .= $this->displayConfirmation($this->trans('Successfully Saved', [], 'Modules.Statusautomation.Statusautomation.php'));
         }
 
-        $this->context->smarty->assign('module_dir', $this->_path);
+        $this->context->smarty->assign([
+            'module_dir' => $this->_path,
+            'register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => '1']),
+            'login_url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
+        ]);
 
         $sfContainer = SymfonyContainer::getInstance();
 
@@ -403,6 +407,7 @@ class Statusautomation extends Module
 
             $this->context->controller->addJS($this->_path . 'views/js/back.js');
             $this->context->controller->addCSS($this->_path . 'views/css/back.css');
+            $this->context->controller->addJS($this->_path . 'views/js/copy.js');
         }
 
         if (Tools::getValue('controller') == 'AdminCustomers') {
@@ -447,22 +452,46 @@ class Statusautomation extends Module
     public function hookHeader()
     {
         $loginURL = $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => '1']);
+        $ORDER_PAGE_RESEND_OTP_URL = $this->context->link->getModuleLink('statusautomation', 'login', ['submitLoginResendVerificationCode' => '1']);
+        $ORDER_PAGE_VALIDATE_OTP_URL = $this->context->link->getModuleLink('statusautomation', 'login', ['validate_verify' => '1']);
+
+        $buttons = [];
+        for ($i = 0; $i < 3; ++$i) {
+            $buttons[] = [
+                'status' => (bool) Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
+                'text' => Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_TEXT_' . $i, Context::getContext()->language->id),
+                'type' => Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i),
+                'url' => $this->getRedirectURL(Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_CUSTOM_URL_TYPE_' . $i), Configuration::get('STATUSAUTOMATION_PHASE_1_BUTTON_URL_' . $i)),
+            ];
+        }
+        
         Media::addJsDef([
             'STATUSAUTOMATION_LOGIN_URL' => $loginURL,
             'STATUSAUTOMATION_SIGN_IN_LOGIN' => $this->trans('WhatsApp', [], 'Modules.Statusautomation.Statusautomation.php'),
             'STATUSAUTOMATION_ADD_EMAIL_TEXT' => $this->trans('+ Add Email', [], 'Modules.Statusautomation.Statusautomation.php'),
             'STATUSAUTOMATION_HIDE_EMAIL_TEXT' => $this->trans('+ Hide Email', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_TITLE' => $this->trans('Verification Form Title', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_CONFIRM_BUTTON_TEXT' => $this->trans('Verify', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_ENTER_CODE_HERE_TEXT' => $this->trans('Enter code you received here', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_NOT_RECEIVED_TEXT' => $this->trans('Not received ?', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_RESEND_CODE_TEXT' => $this->trans('Resend code', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'PSVIPFLOW_VERIFICATION_FORM_ORDER_PAGE_RESEND_OTP_URL' => $ORDER_PAGE_RESEND_OTP_URL,
+            'ORDER_PAGE_VALIDATE_OTP_URL' => $ORDER_PAGE_VALIDATE_OTP_URL,
+            'whatsapp_buttons' => $buttons,
+            'TEXT_RELOAD' => $this->trans('Reload', [], 'Modules.Statusautomation.Login.php'),
         ]);
+
+        $this->context->controller->addJS($this->_path . 'views/js/front.js');
+        $this->context->controller->addCSS($this->_path . 'views/css/front.css');
 
         if (in_array(Tools::getValue('controller'), ['login']) && Tools::getValue('module') == 'statusautomation') {
             if (Tools::getValue('create_account') == '1') {
                 $this->context->controller->addJS($this->_path . 'views/js/signup.js');
             } else {
+                // login js is dependent on front.js
                 $this->context->controller->addJS($this->_path . 'views/js/login.js');
             }
         }
-        $this->context->controller->addJS($this->_path . 'views/js/front.js');
-        $this->context->controller->addCSS($this->_path . 'views/css/front.css');
 
         $this->saveLastVisitedProductId();
         // dump($this->context->customer->isLogged());die;
@@ -474,7 +503,11 @@ class Statusautomation extends Module
         if (Tools::getValue('controller') == 'product') {
             $productId = (int) Tools::getValue('id_product');
             if ($productId) {
-                Context::getContext()->cookie->__set('statusautomation_last_viewed_product', $productId);
+
+                Media::addJsDef([
+                    'STATUSAUTOMATION_IS_PRODUCT_PAGE' => true
+                ]);
+                // Context::getContext()->cookie->__set('statusautomation_last_viewed_product', $productId);
             }
         }
     }
@@ -813,5 +846,38 @@ class Statusautomation extends Module
         }
 
         return $data;
+    }
+    private function getRedirectURL($type, $url)
+    {
+        $link = $this->context->link;
+        switch ($type) {
+            case 'MY_HOMEPAGE':
+                $url = $link->getPageLink('index', true);
+                break;
+
+            case 'CONTACT_US':
+                $url = $link->getPageLink('contact', true);
+                break;
+            case 'LAST_PRODUCT_SEEN':
+                // if ($id_product = $this->module->getLastVisitedProductId()) {
+                //     $url = $link->getProductLink($id_product);
+                // }
+                break;
+            case 'MY_ACCOUNT':
+                $url = $link->getPageLink('my-account', true);
+                break;
+
+            case 'CUSTOM':
+            default:
+                // code...
+                break;
+        }
+
+        // if url is empty goto myaccount page
+        if (empty($url)) {
+            $url = $link->getPageLink('my-account', true);
+        }
+
+        return $url;
     }
 }

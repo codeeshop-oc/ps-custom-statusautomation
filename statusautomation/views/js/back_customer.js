@@ -24,4 +24,14 @@ $(document).ready(function () {
 			$(ele).children().hide()
 		}
 	});
+	$('.column-is_blacklist_field').each((i, ele) => {
+		if (!$(ele).parent().find('.column-whatsapp_number').text().trim()) {
+			$(ele).children().hide()
+		}
+	});
+	// $('.column-is_blacklist_order_field').each((i, ele) => {
+	// 	if (!$(ele).parent().find('.column-whatsapp_number').text().trim()) {
+	// 		$(ele).children().hide()
+	// 	}
+	// });
 });

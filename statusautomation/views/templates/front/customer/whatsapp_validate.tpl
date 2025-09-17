@@ -33,7 +33,7 @@
 					</label>
 					<div class="col-md-6">
 						<div class="my-sm-2">{l s='WhatsApp Number' d='Modules.Statusautomation.Whatsapp_validate'}</div>
-						<input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required="">
+						<input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required="" readonly>
 
 						{*
 						<span class="form-control-comment hidden">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}
