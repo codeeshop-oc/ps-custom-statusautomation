@@ -37,7 +37,8 @@ class StatusautomationBlacklist extends ObjectModel
             /* LANG FIELD */
             'name' => [
                 'type' => self::TYPE_STRING,
-                'lang' => true, 'validate' => 'isGenericName',
+                'lang' => true,
+                'validate' => 'isGenericName',
                 'size' => 190,
             ],
             'description' => [
@@ -81,10 +82,22 @@ class StatusautomationBlacklist extends ObjectModel
      */
     public static function getOneCustomerIdByWhatsappNumber($whatsapp_number)
     {
+        $shopGroup = Shop::getGroupFromShop(Shop::getContextShopID(), false);
+
         $query = new DbQuery();
         $query->select('pw.id_customer');
         $query->from('ts_whatsapp', 'pw');
+        $query->join('INNER JOIN `' . _DB_PREFIX_ . 'customer` c ON c.`id_customer` = pw.`id_customer`');
         $query->where('(pw.whatsapp_number = "' . $whatsapp_number . '" OR pw.whatsapp_number = "0' . $whatsapp_number . '" )');
+        if (Shop::getContext() == Shop::CONTEXT_SHOP && $shopGroup['share_customer']) {
+            $query->where('c.`id_shop_group` = ' . (int) Shop::getContextShopGroupID());
+        } else {
+            $query->where('c.`id_shop` IN (' . implode(', ', Shop::getContextListShopID(Shop::SHARE_CUSTOMER)) . ')');
+        }
+        
+        $query->where('c.`is_guest` = 0');
+        $query->where('c.`deleted` = 0');
+
         $query->groupBy('pw.id_customer');
         if (self::$debug) {
             print_r($query->__toString());

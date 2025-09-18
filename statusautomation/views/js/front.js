@@ -92,39 +92,6 @@ async function verifyStatusAutomationForm(
     allowEscapeKey: false, // 🔒 disables ESC key
     allowEnterKey: false, // optional: disables ENTER key
   });
-
-//   if (formValues == true) {
-//     function loginAndUpdateToVerifiedAccount(next_url) {
-//       $.ajax({
-//         type: "POST",
-//         dataType: "JSON",
-//         url: next_url,
-//         data: JSON.stringify({
-//           whatsapp: $(`.${temp_id} [name="whatsapp"]`).val(),
-//         }),
-//       })
-//         .done((response) => {
-//           if (response.status) {
-//             Swal.fire({
-//               icon: "success",
-//               text: response.message,
-//             });
-//           } else {
-//             Swal.fire({
-//               icon: "error",
-//               text: response.message,
-//             });
-//           }
-//         })
-//         .fail((errors) => {
-//           Swal.fire({
-//             icon: "error",
-//             // title: "Oops...",
-//             text: errors.responseJSON,
-//           });
-//         });
-//     }
-//   }
 }
 
 if (typeof STATUSAUTOMATION_IS_PRODUCT_PAGE != "undefined") {

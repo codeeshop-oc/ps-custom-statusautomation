@@ -40,8 +40,8 @@ class StatusautomationOTPApi
         // return ['status' => true, 'message' => 'sent'];
 
         // remove
-        $phone['prefix_whatsapp_number'] = '+91';
-        $phone['phone_number'] = '7838659995';
+        // $phone['prefix_whatsapp_number'] = '+91';
+        // $phone['phone_number'] = '7838659995';
 
         $response = self::sendWhatsAppTemplateMessage(self::formatMobilePhoneForWhatsapp($phone['phone_number'], $phone['prefix_whatsapp_number']), self::OTP_TEMPLATE, self::OTP_TEMPLATE_LANGUAGE, $template_parameters);
 

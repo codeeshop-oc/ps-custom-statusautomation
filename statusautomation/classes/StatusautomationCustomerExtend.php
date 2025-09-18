@@ -20,6 +20,49 @@
  */
 class StatusautomationCustomerExtend extends CustomerCore
 {
+
+    public function getByPhoneLogin($whatsapp_no, $ignoreGuest = true)
+    {
+        $status = false;
+        $error = '';
+
+        $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
+
+        $sql = new DbQuery();
+        $sql->select('c.*');
+        $sql->from('customer', 'c');
+        $sql->where('c.`id_customer` = "' . $current_customer_id . '"');
+        if (Shop::getContext() == Shop::CONTEXT_SHOP && $shopGroup['share_customer']) {
+            $sql->where('c.`id_shop_group` = ' . (int) Shop::getContextShopGroupID());
+        } else {
+            $sql->where('c.`id_shop` IN (' . implode(', ', Shop::getContextListShopID(Shop::SHARE_CUSTOMER)) . ')');
+        }
+        if ($ignoreGuest) {
+            $sql->where('c.`is_guest` = 0');
+        }
+        $sql->where('c.`deleted` = 0');
+
+        $result = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        // print_r($sql->__toString());die;
+
+        if (!$result) {
+            return false;
+        }
+
+        $customer = new Customer();
+        $customer->id = (int) $result['id_customer'];
+        foreach ($result as $key => $value) {
+            if (property_exists($this, $key)) {
+                $customer->{$key} = $value;
+            }
+        }
+
+        $customer->update();
+
+        return $customer;
+    }
+
+
     /**
      * Return customer instance from its e-mail (optionally check password).
      *
@@ -39,10 +82,12 @@ class StatusautomationCustomerExtend extends CustomerCore
 
         $shopGroup = Shop::getGroupFromShop(Shop::getContextShopID(), false);
 
+        $email = ltrim($email, '0');
+        
         $sql = new DbQuery();
         $sql->select('c.*');
         $sql->from('customer', 'c');
-        $sql->where('c.`email` = \'' . pSQL($email) . '\'');
+        $sql->where('(c.`email` = \'' . pSQL($email) . '\' OR c.`email` = \'0' . pSQL($email) . '\')');
         if (Shop::getContext() == Shop::CONTEXT_SHOP && $shopGroup['share_customer']) {
             $sql->where('c.`id_shop_group` = ' . (int) Shop::getContextShopGroupID());
         } else {

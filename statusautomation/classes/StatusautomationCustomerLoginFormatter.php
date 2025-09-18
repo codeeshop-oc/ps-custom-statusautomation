@@ -38,16 +38,12 @@ class StatusautomationCustomerLoginFormatter implements FormFormatterInterface
             'whatsapp' => (new FormField())
                 ->setName('whatsapp')
                 ->setType('text')
-                ->setLabel($this->translator->trans('WhatsApp Number', [], 'Modules.TsWhatsapp.Admin'))
+                ->setLabel($this->translator->trans('WhatsApp Number', [], 'Shop.Theme.TsWhatsapp'))
                 ->setRequired(true)
                 ->addConstraint('isCleanHtml')
                 ->addAvailableValue(
                     'comment',
-                    $this->translator->trans(
-                        'Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).',
-                        [],
-                        'Modules.TsWhatsapp.Admin'
-                    )
+                    $this->translator->trans('Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).', [], 'Modules.Statusautomation.Shop')
                 ),
         ];
     }

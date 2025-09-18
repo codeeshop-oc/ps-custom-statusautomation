@@ -37,21 +37,29 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         return parent::checkAccess();
     }
 
+    private function getNineDigits($old_whatsapp_no)
+    {
+        return ltrim($old_whatsapp_no, '0');
+    }
+
     public function initContent()
     {
         // error_reporting(E_ALL);
         // ini_set('display_errors', 1);
-        
+
         $should_register_redirect = false;
+        $whatsapp_no = self::getNineDigits(Tools::getValue('whatsapp', false));
 
         if (Tools::isSubmit('order_to_login')) {
             $_POST['whatsapp'] = Tools::getValue('t_number');
-            $this->context->cookie->__set('statusautomation_validate_login_whatsapp', Tools::getValue('whatsapp', false));
+            $whatsapp_no = self::getNineDigits(Tools::getValue('whatsapp', false));
+
+            $this->context->cookie->__set('statusautomation_validate_login_whatsapp', $whatsapp_no);
 
             $status = true;
             $message = '';
             // $should_redirect = true;
-            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
@@ -73,7 +81,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         } elseif (Tools::isSubmit('submitCreate') || Tools::isSubmit('create_account')) {
             // fixed added the email
             if (empty($_POST['email'])) {
-                $_POST['email'] = sprintf('%s@secure.boutique', Tools::getValue('whatsapp', ''));
+                $_POST['email'] = sprintf('%s@secure.boutique', $whatsapp_no);
             }
 
             foreach (['password', 'birthday', 'id_gender'] as $key) {
@@ -84,8 +92,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             if (Validate::isEmail($_POST['email'])) {
                 $old_customer_exist = (new Customer())->getByEmail($_POST['email']);
             }
-
-            // dump($_POST['email']);die;
 
             $register_form = $this
                 ->makeCustomerForm()
@@ -121,7 +127,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $this->setTemplate('module:statusautomation/views/templates/front/customer/registration.tpl');
         } elseif (Tools::isSubmit('submitLoginResendVerificationCode')) {
             $ts_whatsappModule = Module::getInstanceByName('ts_whatsapp');
-            $resp = $ts_whatsappModule->checkPhoneNumberIsValid(Tools::getValue('whatsapp'));
+            $resp = $ts_whatsappModule->checkPhoneNumberIsValid($whatsapp_no);
             $status = $resp['status'] ?? false;
             $message = $resp['message'] ?? false;
             $new_otp = '';
@@ -129,7 +135,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             if ($status) {
                 // send otp before redirect
 
-                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
 
                 $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
@@ -141,6 +147,9 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
                 if ($resp['status']) {
                     $new_otp = $resp['otp'];
                     $message = $this->trans('Successfully Sent', [], 'Modules.Statusautomation.Login.php');
+                } else {
+                    $status = false;
+                    $message = $this->trans('%s', [$resp['message']], 'Modules.Statusautomation.Login.php');
                 }
             }
 
@@ -153,7 +162,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             exit;
         } elseif (Tools::isSubmit('submitResendVerificationCode')) {
             $ts_whatsappModule = Module::getInstanceByName('ts_whatsapp');
-            $resp = $ts_whatsappModule->checkPhoneNumberIsValid(Tools::getValue('whatsapp'));
+            $resp = $ts_whatsappModule->checkPhoneNumberIsValid($whatsapp_no);
             $status = $resp['status'] ?? false;
             $message = $resp['message'] ?? false;
             $new_otp = '';
@@ -181,24 +190,24 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             exit;
         } elseif (Tools::isSubmit('submitVerifyLogin')) {
             // api to send code
-            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
             $status = false;
-            if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', Tools::getValue('whatsapp'), Tools::getValue('phone_verify_code', false))) {
-                if (Validate::isLoadedObject(Context::getContext()->customer)) {
-                    Context::getContext()->customer->logout();
-                }
-    
+            if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', $whatsapp_no, Tools::getValue('phone_verify_code', false))) {
+                // if (Validate::isLoadedObject(Context::getContext()->customer)) {
+                //     Context::getContext()->customer->logout();
+                // }
+
                 // update customer to VIP customer
                 $updateLink = Tools::getValue('PSVIPFLOW_UPDATE_LINK', false);
                 if ($updateLink) {
                     @file_get_contents(base64_decode($updateLink));
                 }
-                
-                $customer = new Customer($current_customer_id);
-                $this->doOnlyLogin($customer->email);
+
+                // $customer = new Customer($current_customer_id);
+                $this->doOnlyLogin($whatsapp_no);
 
                 if (empty($this->errors)) {
 
@@ -214,7 +223,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $this->ajaxRender(json_encode([
                 'status' => $status,
                 'message' => $message,
-                'values' => Tools::getAllValues(),
+                // 'values' => Tools::getAllValues(),
             ]));
             exit;
         } elseif (Tools::isSubmit('submitVerify')) {
@@ -223,13 +232,13 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             if (!empty($this->context->customer->id)) {
                 $current_customer_id = $this->context->customer->id;
             } else {
-                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
             }
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
             $status = false;
-            if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', Tools::getValue('whatsapp'), Tools::getValue('phone_verify_code', false))) {
+            if (StatusautomationWhatsappVerify::checkOTP($whatsapp_number_row ? $whatsapp_number_row['id_whatsapp'] : '', $whatsapp_no, Tools::getValue('phone_verify_code', false))) {
                 $curr_customer = new Customer($current_customer_id);
                 $this->doLoginFromRegister($curr_customer->email);
 
@@ -257,14 +266,14 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             );
 
             if (!empty($this->context->cookie->__get('statusautomation_validate_login_whatsapp'))) {
-                $_POST['whatsapp'] = $this->context->cookie->__get('statusautomation_validate_login_whatsapp');
+                $_POST['whatsapp'] = $whatsapp_no = self::getNineDigits($this->context->cookie->__get('statusautomation_validate_login_whatsapp'));
             }
 
             $login_form = $this->makeLoginForm()->fillWith(
                 Tools::getAllValues()
             );
 
-            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+            $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
@@ -296,7 +305,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             if (!empty($this->context->customer->id)) {
                 $current_customer_id = $this->context->customer->id;
             } else {
-                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+                $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
             }
 
             $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
@@ -305,8 +314,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             $whatsapp_number = $whatsapp_number_row ? $whatsapp_number_row['whatsapp_number'] : '';
             $URL = $this->context->link->getModuleLink('statusautomation', 'login', ['validate_verify' => '1']);
             $resend_verification_code = $this->context->link->getModuleLink('statusautomation', 'login', ['submitResendVerificationCode' => '1']);
-
-            // dump($buttons);die;
 
             $this->context->smarty->assign([
                 'whatsapp_verify_url' => $URL,
@@ -320,16 +327,16 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
 
             $this->setTemplate('module:statusautomation/views/templates/front/customer/whatsapp_validate.tpl');
         } else {
-            // dump('111');die;
+
             $login_form = $this->makeLoginForm()->fillWith(
                 Tools::getAllValues()
             );
 
             if (Tools::isSubmit('submitLoginOTP')) {
                 if ($login_form->submitForm()) {
-                    $this->context->cookie->__set('statusautomation_validate_login_whatsapp', Tools::getValue('whatsapp', false));
+                    $this->context->cookie->__set('statusautomation_validate_login_whatsapp', $whatsapp_no);
                     // $should_redirect = true;
-                    $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
+                    $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber($whatsapp_no);
 
                     $whatsapp_number_row = StatusautomationWhatsappVerify::getWhatsappRow($current_customer_id);
 
@@ -345,7 +352,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             }
 
             $this->context->smarty->assign([
-                'statusautomation_register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => 1]),        
+                'statusautomation_register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => 1]),
                 'login_form' => $login_form->getProxy(),
             ]);
 
@@ -425,13 +432,13 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         return $params;
     }
 
-    public function doOnlyLogin($email)
+    public function doOnlyLogin($whatapp_no)
     {
         Hook::exec('actionAuthenticationBefore');
 
         $customer = new StatusautomationCustomerExtend();
-        $authentication = $customer->getByEmailLogin($email, false);
-
+        $authentication = $customer->getByPhoneLogin($whatapp_no, false);
+        
         if (isset($authentication->active) && !$authentication->active) {
             $this->errors[] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Shop.Notifications.Error');
         } elseif (!$authentication || !$authentication->id && $authentication->is_guest == 1) {
@@ -445,6 +452,7 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             CartRule::autoAddToCart($this->context);
         }
 
+        // dump($this->context->customer);die;
         return true;
     }
 
@@ -471,7 +479,6 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
         } else {
             $this->context->updateCustomer($authentication);
             Hook::exec('actionAuthentication', ['customer' => $this->context->customer]);
-            // dump($authentication);die;
 
             // Login information have changed, so we check if the cart rules still apply
             CartRule::autoRemoveFromCart($this->context);

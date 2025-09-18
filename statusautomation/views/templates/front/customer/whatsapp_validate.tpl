@@ -36,12 +36,12 @@
 						<input class="form-control" name="whatsapp" type="text" value="{$whatsapp_number}" required="" readonly>
 
 						{*
-						<span class="form-control-comment hidden">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}
+						<span class="form-control-comment hidden">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Shop'}
 						</span>
 
 						<div class="whatsapp_help_block help-block hidden">
 							<ul>
-								<li class="alert alert-danger">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Whatsapp_validate'}</li>
+								<li class="alert alert-danger">{l s='Please enter a valid WhatsApp number without country code or 0 at start (9 digits only).' d='Modules.Statusautomation.Shop'}</li>
 							</ul>
 						</div>
 						*}
