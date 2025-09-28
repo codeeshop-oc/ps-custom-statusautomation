@@ -18,31 +18,20 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
-class StatusautomationLoginModuleFrontController extends ModuleFrontController
+class StatusautomationAjaxModuleFrontController extends ModuleFrontController
 {
     private const PREFIX_WHATSAPP_NUMBER = '+212';
     public $ssl = true;
     // public $php_self = 'login';
     public $auth = false;
 
-    // .page-authentication, .page-customer-account
-
-    public function checkAccess()
+    public function displayAjaxGetFreeThreshold()
     {
-        if ($this->context->customer->isLogged() && !$this->ajax) {
-            $this->redirect_after = ($this->authRedirection) ? urlencode($this->authRedirection) : 'my-account';
-            $this->redirect();
-        }
-
-        return parent::checkAccess();
+        //
+        // $this->module->getFreeShippingThreshold()
     }
 
-    private function getNineDigits($old_whatsapp_no)
-    {
-        return ltrim($old_whatsapp_no, '0');
-    }
-
-    public function initContent()
+    public function initContentz()
     {
         // error_reporting(E_ALL);
         // ini_set('display_errors', 1);
@@ -394,140 +383,4 @@ class StatusautomationLoginModuleFrontController extends ModuleFrontController
             return $this->redirectWithNotifications($new_url);
         }
     }
-
-    public function getBreadcrumbLinks()
-    {
-        $breadcrumb = parent::getBreadcrumbLinks();
-
-        if (Tools::isSubmit('submitCreate') || Tools::isSubmit('create_account')) {
-            $breadcrumb['links'][] = [
-                'title' => $this->trans('Create an account', [], 'Modules.Statusautomation.Login.php'),
-                'url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
-            ];
-        } else {
-            $breadcrumb['links'][] = [
-                'title' => $this->trans('Log in to your account', [], 'Modules.Statusautomation.Login.php'),
-                'url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
-            ];
-        }
-
-        return $breadcrumb;
-    }
-
-    private function sendOTPReq($id_whatsapp, $whatsapp_number, $prefix_whatsapp_number)
-    {
-        // save and send otp
-        $verifyObj = new StatusautomationWhatsappVerify();
-        $verifyObj->id_whatsapp = (int) $id_whatsapp;
-        $verifyObj->phone_number = $whatsapp_number;
-        $verifyObj->code = StatusautomationWhatsappVerify::generateOtpCode(6);
-        // delete all before save new
-        $verifyObj->deleteAllOTP($verifyObj->phone_number);
-        $verifyObj->save();
-
-        // remove
-        // $send_data = ['status' => true, 'message' => 'sent'];
-        $send_data = StatusautomationOTPApi::send([
-            'phone_number' => $whatsapp_number,
-            'prefix_whatsapp_number' => $prefix_whatsapp_number,
-            'message' => $verifyObj->code,
-        ]);
-
-        return [
-            'status' => $send_data['status'],
-            'message' => $send_data['message'],
-            'otp' => $verifyObj->code,
-        ];
-    }
-
-    public function getTemplateVarPage()
-    {
-        $params = parent::getTemplateVarPage();
-
-        $params['body_classes']['page-customer-account'] = true;
-        $params['body_classes']['page-authentication'] = true;
-
-        return $params;
-    }
-
-    public function doOnlyLogin($whatapp_no)
-    {
-        Hook::exec('actionAuthenticationBefore');
-
-        $customer = new StatusautomationCustomerExtend();
-        $authentication = $customer->getByPhoneLogin($whatapp_no, false);
-
-        if (isset($authentication->active) && !$authentication->active) {
-            $this->errors[] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Shop.Notifications.Error');
-        } elseif (!$authentication || !$authentication->id && $authentication->is_guest == 1) {
-            $this->errors[] = $this->translator->trans('Authentication failed.', [], 'Shop.Notifications.Error');
-        } else {
-            $this->context->updateCustomer($authentication);
-            Hook::exec('actionAuthentication', ['customer' => $this->context->customer]);
-
-            // Login information have changed, so we check if the cart rules still apply
-            CartRule::autoRemoveFromCart($this->context);
-            CartRule::autoAddToCart($this->context);
-        }
-
-        // dump($this->context->customer);die;
-        return true;
-    }
-
-    public function doLoginFromRegister($email)
-    {
-        Hook::exec('actionAuthenticationBefore');
-
-        $customer = new StatusautomationCustomerExtend();
-        $authentication = $customer->getByEmailLogin($email, false);
-
-        if (isset($authentication->active) && !$authentication->active) {
-            $this->errors[] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Shop.Notifications.Error');
-        } elseif ($authentication->is_guest == 1) {
-            // set customer group to customer
-            StatusautomationCustomerExtend::updateCustomerGroup($this->context->customer->id, Configuration::get('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_REGISTER_VERIFY'));
-            $authentication = new Customer($authentication->id);
-            // updated it to customer group
-            $authentication->is_guest = 0;
-            $authentication->update();
-        }
-
-        if (!$authentication || !$authentication->id) {
-            $this->errors[] = $this->translator->trans('Authentication failed.', [], 'Shop.Notifications.Error');
-        } else {
-            $this->context->updateCustomer($authentication);
-            Hook::exec('actionAuthentication', ['customer' => $this->context->customer]);
-
-            // Login information have changed, so we check if the cart rules still apply
-            CartRule::autoRemoveFromCart($this->context);
-            CartRule::autoAddToCart($this->context);
-            // $this->context->cookie->write();
-        }
-
-        return true;
-    }
-
-    protected function makeLoginForm()
-    {
-        $form = new StatusautomationCustomerLoginForm(
-            $this->context->smarty,
-            $this->context,
-            $this->getTranslator(),
-            new StatusautomationCustomerLoginFormatter($this->getTranslator()),
-            $this->getTemplateVarUrls()
-        );
-
-        $form->setAction($this->getCurrentURL());
-
-        return $form;
-    }
-
-    // private function getErrorPageRedirect()
-    // {
-    //     if (!Tools::getIsset('secret') && Tools::getIsset('user') && Configuration::get('LOGINWITHCUSTOMERIDOREMAIL_QUICK_LOGIN_ERROR_REDIRECT_TO_PAGE')) {
-    //         exit($this->redirectWithNotifications(Configuration::get('LOGINWITHCUSTOMERIDOREMAIL_QUICK_LOGIN_ERROR_REDIRECT_TO_PAGE')));
-    //     } else {
-    //         exit($this->redirectWithNotifications('index'));
-    //     }
-    // }
 }

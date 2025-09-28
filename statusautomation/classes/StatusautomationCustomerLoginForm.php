@@ -38,7 +38,7 @@ class StatusautomationCustomerLoginForm extends AbstractForm
         Context $context,
         TranslatorInterface $translator,
         StatusautomationCustomerLoginFormatter $formatter,
-        array $urls
+        array $urls,
     ) {
         parent::__construct(
             $smarty,

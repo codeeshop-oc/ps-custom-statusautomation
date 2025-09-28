@@ -29,6 +29,10 @@ $(document).ready(function () {
 		$(ele).trigger('change')
 	});
 
+	$('.casablanca_cities').select2({
+		tags: true,
+	})
+
 	// rearranging form to top
 	// (function () {
 	// 	const ele = $('#submitOptionsmodule').parents('.panel')

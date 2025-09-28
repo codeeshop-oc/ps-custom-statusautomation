@@ -41,13 +41,7 @@ class VerifiedStatusController extends FrameworkBundleAdminController
             return $this->redirectToRoute('admin_customers_index');
         }
 
-        \Db::getInstance()->execute('
-            UPDATE `' . _DB_PREFIX_ . 'ts_whatsapp`
-            SET
-                `is_verified` = IF(`is_verified` = 1, 0, 1),
-                `is_verified_date` = NOW()
-            WHERE `id_customer` = ' . (int) $customerId
-        );
+        \StatusautomationVerify::toggleVerified($customerId);
 
         $this->addFlash('success', 'Updated Verified Status successfully.');
 

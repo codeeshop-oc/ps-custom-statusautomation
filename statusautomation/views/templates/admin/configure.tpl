@@ -17,6 +17,14 @@
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  *}
 
+<div class="alert alert-info">
+	<button type="button" class="close" data-dismiss="alert">×</button>
+	{l s='<strong>OTP Message Template:</strong> Use name as `ps_statusautomation_otp`' d='Modules.Statusautomation.Configure'}
+	<strong><a class="link" target="_blank" href="https://business.facebook.com/latest/whatsapp_manager/message_templates/?business_id=196665584179246&tab=message-templates&filters=%7B%22date_range%22%3A7%2C%22language%22%3A[]%2C%22quality%22%3A[]%2C%22search_text%22%3A%22%22%2C%22status%22%3A[%22APPROVED%22%2C%22IN_APPEAL%22%2C%22PAUSED%22%2C%22PENDING%22%2C%22REJECTED%22]%2C%22tag%22%3A[]%7D&nav_ref=whatsapp_manager&asset_id=1320840683048699">{l s='Facebook Business' d='Modules.Statusautomation.Configure'}</a></strong>
+	<br/>
+	{l s='Customer Group (VIP) is same for current Module: `statusautomation` and `psvipflow`' d='Modules.Statusautomation.Configure'}
+</div>
+
 <div class="form-group">
 	<a href="{$STATUSAUTOMATION_DOWNLOAD_URL}" class="btn btn-primary js-download-file-btn" target="_blank"><i class="process-icon-download"></i> {l s="Download BlackList File" d='Modules.Statusautomation.Configure'}</a>
 </div>

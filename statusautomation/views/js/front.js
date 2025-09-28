@@ -45,7 +45,8 @@ async function verifyStatusAutomationForm(
     title: PSVIPFLOW_VERIFICATION_FORM_TITLE,
     showCancelButton: false,
     html: `
-		  <div class="statusautomation-form temp_id ${type.toLowerCase()}">
+    <div class="statusautomation-form temp_id ${type.toLowerCase()}">
+        <div style="position: absolute; right: 15px; top: 15px"><span class="statusautomation-close close">x</span></div>
 		  	<div class="form-group row">
 				<label class="col-md-2 form-control-label required"></label>
 				<div class="col-md-8">
@@ -237,6 +238,9 @@ $(document)
   .on("click", "#submit-verify", function () {
     const obj = new Statusautomation();
     obj.verifyPhone("#submit-verify", ORDER_PAGE_VALIDATE_OTP_URL);
+  })
+  .on("click", ".statusautomation-close", function () {
+    Swal.close()
   })
   .on("click", "#submit-resend_verification_code", function () {
     const obj = new Statusautomation();

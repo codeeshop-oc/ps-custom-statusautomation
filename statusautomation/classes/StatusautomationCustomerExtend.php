@@ -20,7 +20,6 @@
  */
 class StatusautomationCustomerExtend extends CustomerCore
 {
-
     public function getByPhoneLogin($whatsapp_no, $ignoreGuest = true)
     {
         $status = false;
@@ -62,7 +61,6 @@ class StatusautomationCustomerExtend extends CustomerCore
         return $customer;
     }
 
-
     /**
      * Return customer instance from its e-mail (optionally check password).
      *
@@ -83,7 +81,7 @@ class StatusautomationCustomerExtend extends CustomerCore
         $shopGroup = Shop::getGroupFromShop(Shop::getContextShopID(), false);
 
         $email = ltrim($email, '0');
-        
+
         $sql = new DbQuery();
         $sql->select('c.*');
         $sql->from('customer', 'c');

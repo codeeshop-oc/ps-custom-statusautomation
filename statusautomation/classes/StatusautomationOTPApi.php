@@ -23,7 +23,7 @@ class StatusautomationOTPApi
     private const VERBOSE = true;
     public const API_VERSION = 'v22.0';
     private const OTP_TEMPLATE = 'ps_statusautomation_otp';
-    private const OTP_TEMPLATE_LANGUAGE = 'en_US';
+    // private const OTP_TEMPLATE_LANGUAGE = 'en_US';
 
     public static function log($message)
     {
@@ -37,15 +37,19 @@ class StatusautomationOTPApi
         $template_parameters[] = $phone['message'];
 
         // remove
-        // return ['status' => true, 'message' => 'sent'];
+        if (Statusautomation::MY_DEBUG == 'WITHOUT') {
+            return ['status' => true, 'message' => 'sent'];
+        }
 
         // remove
-        // $phone['prefix_whatsapp_number'] = '+91';
-        // $phone['phone_number'] = '7838659995';
+        if (Statusautomation::MY_DEBUG == 'WITH') {
+            $phone['prefix_whatsapp_number'] = '+91';
+            $phone['phone_number'] = '7838659995';
+        }
 
-        $response = self::sendWhatsAppTemplateMessage(self::formatMobilePhoneForWhatsapp($phone['phone_number'], $phone['prefix_whatsapp_number']), self::OTP_TEMPLATE, self::OTP_TEMPLATE_LANGUAGE, $template_parameters);
+        $response = self::sendWhatsAppTemplateMessage(self::formatMobilePhoneForWhatsapp($phone['phone_number'], $phone['prefix_whatsapp_number']), self::OTP_TEMPLATE, Context::getContext()->language->iso_code, $template_parameters);
 
-        return $response;         
+        return $response;
     }
 
     private function sendWhatsAppTemplateMessage($phone_number, $template_name, $language_code, $template_parameters = [])
@@ -72,7 +76,7 @@ class StatusautomationOTPApi
                     'language' => ['code' => $language_code],
                     'components' => [],
                 ],
-            ];            
+            ];
 
             if (!empty($template_parameters)) {
                 $payload['template']['components'][] = [
@@ -86,7 +90,7 @@ class StatusautomationOTPApi
                     'type' => 'text',
                     'text' => $template_parameters[0],
                 ];
-                
+
                 $payload['template']['components'][] = [
                     'type' => 'button',
                     'sub_type' => 'url',
@@ -99,7 +103,6 @@ class StatusautomationOTPApi
                     ],
                 ];
             }
-
 
             $headers = [
                 "Authorization: Bearer {$access_token}",

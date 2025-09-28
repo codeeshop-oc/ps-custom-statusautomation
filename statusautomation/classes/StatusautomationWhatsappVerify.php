@@ -71,7 +71,7 @@ class StatusautomationWhatsappVerify extends ObjectModel
         $query->select('code');
         $query->from(self::$definition['table'], 's');
         $query->where('s.`phone_number` = "' . (string) $phone_number . '" OR s.`phone_number` = "0' . (string) $phone_number . '"');
-        $query->where('s.`id_whatsapp` = "' . $id_whatsapp . '"');        
+        $query->where('s.`id_whatsapp` = "' . $id_whatsapp . '"');
         $query->orderBy('s.`id_ts_whatsapp_verify` DESC');
 
         if (self::$debug) {
@@ -84,6 +84,7 @@ class StatusautomationWhatsappVerify extends ObjectModel
 
         if (($otp && $otp == $query_otp_code) ?? false) {
             self::deleteOne($id_whatsapp);
+
             return true;
         } else {
             return false;

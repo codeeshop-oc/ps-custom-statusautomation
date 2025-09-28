@@ -51,6 +51,28 @@ class StatusautomationVerify extends ObjectModel
         return $whatsapp_number ?? false;
     }
 
+    public static function toggleVerified($customerId)
+    {
+        Db::getInstance()->execute('
+            UPDATE `' . _DB_PREFIX_ . 'ts_whatsapp`
+            SET
+                `is_verified` = IF(`is_verified` = 1, 0, 1),
+                `is_verified_date` = NOW()
+            WHERE `id_customer` = ' . (int) $customerId
+        );
+    }
+
+    public static function updateVerified($customerId, $is_verified = 0)
+    {
+        Db::getInstance()->execute('
+            UPDATE `' . _DB_PREFIX_ . 'ts_whatsapp`
+            SET
+                `is_verified` = ' . $is_verified . ',
+                `is_verified_date` = NOW()
+            WHERE `id_customer` = ' . (int) $customerId
+        );
+    }
+
     public static function getOrderCount($id_customer)
     {
         $query = new DbQuery();

@@ -80,7 +80,7 @@ class StatusautomationBlacklist extends ObjectModel
     /**
      * Find duplicate customers by WhatsApp number
      */
-    public static function getOneCustomerIdByWhatsappNumber($whatsapp_number)
+    public static function getOneCustomerIdByWhatsappNumber($whatsapp_number, $is_guest = false)
     {
         $shopGroup = Shop::getGroupFromShop(Shop::getContextShopID(), false);
 
@@ -94,8 +94,10 @@ class StatusautomationBlacklist extends ObjectModel
         } else {
             $query->where('c.`id_shop` IN (' . implode(', ', Shop::getContextListShopID(Shop::SHARE_CUSTOMER)) . ')');
         }
-        
-        $query->where('c.`is_guest` = 0');
+
+        if (!$is_guest) {
+            $query->where('c.`is_guest` = 0');
+        }
         $query->where('c.`deleted` = 0');
 
         $query->groupBy('pw.id_customer');
@@ -150,6 +152,11 @@ class StatusautomationBlacklist extends ObjectModel
         $query->where('s.`is_blacklisted` = "' . $is_blacklisted . '"');
 
         $whatsapp_number = Db::getInstance()->getValue($query);
+
+        // $CesLog = new CesLog('error.log');
+        // $CesLog->write([
+        //     'StatusautomationBlacklist::isBlacklisted' => $query,
+        // ]);
 
         return $whatsapp_number ?? false;
     }
