@@ -38,6 +38,13 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'statusautomation_error`
     PRIMARY KEY  (`id_statusautomation_error`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'statusautomation_pending_status_changes` (
+    `id_order` int(11) NOT NULL,
+    `target_id_order_state` int(11) NOT NULL,
+    `date_add` datetime DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY  (`id_order`, `target_id_order_state`)
+) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
 // `id_shop` int(11),
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'ts_whatsapp_verify` (
     `id_ts_whatsapp_verify` int(11) NOT NULL AUTO_INCREMENT,

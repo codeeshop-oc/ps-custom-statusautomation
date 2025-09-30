@@ -56,11 +56,21 @@ class Statusautomation extends Module
 
         // include dirname(__FILE__) . '/sql/uninstall.php';
         // include dirname(__FILE__) . '/sql/install.php';
-        // $this->registerHook('actionOrderStatusPostUpdate');
         // $this->unregisterHook('actionObjectCustomerUpdateAfter');
-        // $this->registerHook('ActionObjectCustomerUpdateBefore');
+        // $this->registerHook('actionObjectOrderUpdateAfter');
 
         // self::statusUpdateCondition(13620);
+
+        // $id_carrier_temp = false;
+        // $statusautomationModule = Module::getInstanceByName('statusautomation');
+        // if (Validate::isLoadedObject($statusautomationModule)) {
+        //     $id_carrier_temp = $statusautomationModule->getCarrierIdByCity($city, $id_country);
+        // }
+        // if ($id_carrier_temp) {
+        //     $this->context->cart->id_carrier = $id_carrier_temp;
+        // } else {
+        //     $this->context->cart->id_carrier = Tools::getValue('carrier', (int)Configuration::get("WL_OOW_CARRIER"));
+        // }
     }
 
     /**
@@ -77,6 +87,7 @@ class Statusautomation extends Module
         return parent::install()
             && $this->registerHook([
                 'header',
+                'actionObjectOrderUpdateAfter',
                 'actionOrderStatusPostUpdate',
                 'actionObjectCustomerUpdateBefore',
                 'displayBackOfficeHeader',
@@ -97,12 +108,29 @@ class Statusautomation extends Module
         return parent::uninstall();
     }
 
+    private function test()
+    {
+        return;
+        $newOrderStatusObj = new stdClass();
+        // $newOrderStatusObj->id = 16;
+        // $id_order = 10;
+        $newOrderStatusObj->id = 11;
+        $id_order = 25;
+        $this->hookActionOrderStatusPostUpdate([
+            'newOrderStatus' => $newOrderStatusObj,
+            'id_order' => $id_order,
+        ]);
+        // exit($this->checkIfCasablanca($id_order));
+        exit('test done ' . $id_order);
+        // $this->getFreeShippingThreshold(151, 99);
+    }
+
     /**
      * Load the configuration form
      */
     public function getContent()
     {
-        // $this->getFreeShippingThreshold(151, 99);
+        $this->test();
         $output = '';
         /*
          * If values have been submitted in the form, process.
@@ -190,9 +218,8 @@ class Statusautomation extends Module
                 'tabs' => [
                     'phase_2_inputs' => $this->l('Phase 2'),
                     'phase_1_inputs' => $this->l('Order Confirmation & VIP Offer Popup'),
-                    'product_export' => $this->l('Phase 3'),
-                    'order_import' => $this->l('Phase 4'),
-                    // 'advanced' => $this->l('Advanced Settings'),
+                    'phase_3_inputs' => $this->l('Phase 3'),
+                    'phase_4_inputs' => $this->l('Phase 4'),
                 ],
                 'input' => $inputs,
                 'submit' => [
@@ -291,9 +318,15 @@ class Statusautomation extends Module
             $this->context->controller->addJS($this->_path . 'views/js/copy.js');
         }
 
-        if (Tools::getValue('controller') == 'AdminCustomers') {
+        $controller = Tools::getValue('controller');
+        if ($controller == 'AdminCustomers') {
             $this->context->controller->addJS($this->_path . 'views/js/back_customer.js');
         }
+    }
+
+    public function hookActionObjectOrderUpdateAfter($params)
+    {
+        $this->processPendingStatuses();
     }
 
     /**
@@ -347,6 +380,7 @@ class Statusautomation extends Module
         }
 
         Media::addJsDef([
+            'STATUSAUTOMATION_CASABLANCA_CITIES' => $this->getCitiesArray(),
             'STATUSAUTOMATION_LOGIN_URL' => $loginURL,
             'STATUSAUTOMATION_SIGN_IN_LOGIN' => $this->trans('WhatsApp', [], 'Modules.Statusautomation.Statusautomation.php'),
             'STATUSAUTOMATION_ADD_EMAIL_TEXT' => $this->trans('+ Add Email', [], 'Modules.Statusautomation.Statusautomation.php'),
@@ -375,7 +409,17 @@ class Statusautomation extends Module
         }
 
         $this->saveLastVisitedProductId();
-        // dump($this->context->customer->isLogged());die;
+    }
+
+    private function processPendingStatuses()
+    {
+        $rows = StatusautomationPendingStatusChanges::getAll();
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                self::putPaymentStatus(new Order((int) $row['id_order']), $row['target_id_order_state']);
+                StatusautomationPendingStatusChanges::delete($row['id_order'], $row['target_id_order_state']);
+            }
+        }
     }
 
     // save last visited product id
@@ -451,17 +495,26 @@ class Statusautomation extends Module
         }
     }
 
-    private function checkIfCasablanca($id_order)
+    private function checkIfCasablanca($id_order = null)
     {
-        $sql = 'SELECT a.city
-            FROM ' . _DB_PREFIX_ . 'orders o
-            INNER JOIN ' . _DB_PREFIX_ . 'address a
-            ON o.id_address_delivery = a.id_address
-            WHERE o.id_order = ' . (int) $id_order;
+        if ($id_order) {
+            $sql = 'SELECT a.city
+                FROM ' . _DB_PREFIX_ . 'orders o
+                INNER JOIN ' . _DB_PREFIX_ . 'address a
+                ON o.id_address_delivery = a.id_address
+                WHERE o.id_order = ' . (int) $id_order;
 
-        $city = Db::getInstance()->getValue($sql);
+            $city = Db::getInstance()->getValue($sql);
 
-        $cities = json_decode(Configuration::get('STATUSAUTOMATION_PHASE_2_CASABLANCA_CITIES'), true);
+            return $this->checkIfCasablancaCity($city);
+        }
+
+        return false;
+    }
+
+    private function checkIfCasablancaCity($city = null)
+    {
+        $cities = $this->getCitiesArray();
 
         if ($city !== false && in_array(strtolower($city), $cities)) {
             return true;
@@ -477,17 +530,25 @@ class Statusautomation extends Module
             if ($params['newOrderStatus']->id == Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_CONVERT_GROUP_TO_BLACKLIST')) {
                 self::updateCustomerGroup($id_order, Configuration::get('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST'));
             }
+
             if ($params['newOrderStatus']->id == Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CONFIRMED')) {
                 // check if city is casablanca
                 if ($this->checkIfCasablanca($id_order)) {
-                    self::putPaymentStatus(new Order($id_order), Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CASABLANCA'));
+                    $this->saveForNextUpdate(new Order($id_order), Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CASABLANCA'));
                 } else {
-                    self::putPaymentStatus(new Order($id_order), Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_NOT_CASABLANCA'));
+                    $this->saveForNextUpdate(new Order($id_order), Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_NOT_CASABLANCA'));
                 }
             }
         } catch (Exception $err) {
             $this->CesLog = new CesLog('error.log');
             $this->CesLog->write($err->getMessage());
+        }
+    }
+
+    public function saveForNextUpdate($order, $order_status)
+    {
+        if (Validate::isLoadedObject($order) && $order->current_state != $order_status) {
+            StatusautomationPendingStatusChanges::save($order->id, $order_status);
         }
     }
 
@@ -781,6 +842,9 @@ class Statusautomation extends Module
     {
         if (Validate::isLoadedObject($order) && $order->current_state != $order_status) {
             $order->setCurrentState((int) $order_status);
+            // $history = new OrderHistory();
+            // $history->id_order = (int) $order->id;
+            // $history->changeIdOrderState((int) $order_status, $order);
         }
     }
 
@@ -1256,5 +1320,37 @@ class Statusautomation extends Module
         exit;
 
         return Db::getInstance()->getValue($query);
+    }
+
+    private function getCitiesArray()
+    {
+        return json_decode(Configuration::get('STATUSAUTOMATION_PHASE_2_CASABLANCA_CITIES'), true);
+    }
+
+    // from Orderonwhatsapp > ajax.php, update > id_carrier
+    public function getCarrierIdByCity($city, $id_country, $hook = '')
+    {
+        $id_carrier = null;
+
+        if ($city && $this->checkIfCasablancaCity($city)) {
+            // print_r([
+            //     'is_casablanca' => true,
+            //     'city' => $city,
+            //     'hook' => $hook,
+            //     'id_country' => $id_country,
+            // ]);
+
+            $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_CASABLANCA');
+        } else {
+            $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_NOT_CASABLANCA');
+            // print_r([
+            //     'city' => $city,
+            //     'hook' => $hook,
+            //     'id_country' => $id_country,
+            // ]);
+            // return;
+        }
+
+        return $id_carrier;
     }
 }
