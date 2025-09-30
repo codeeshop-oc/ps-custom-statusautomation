@@ -1,20 +1,26 @@
 {
-    "name": "prestashop/statusautomation",
-    "description": "",
-    "config": {
+  "name": "prestashop/statusautomation",
+  "description": "Status Automation Module",
+  "type": "prestashop-module",
+  "license": "AFL-3.0",
+  "config": {
+    "preferred-install": "dist",
+    "optimize-autoloader": true,
+    "prepend-autoloader": false
+  },
+  "require": {
+    "php": ">=5.6",
+    "codeeshop/ps-module-logger": "0.0.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "PrestaShop\\Module\\Statusautomation\\": "src/"
     },
-    "require": {
-        "php": ">=5.6"
-    },
-    "autoload": {
-        "psr-4": {
-            "PrestaShop\\Module\\Statusautomation\\": "src/"
-        },
-        "classmap": [
-            "classes",
-            "statusautomation.php"
-        ]
-    },
-    "author": "CodeEshop",
-    "license": "AFL-3.0"
+     "classmap": [
+          "classes"
+      ]
+  },
+  "authors": [
+    { "name": "CodeEshop" }
+  ]
 }

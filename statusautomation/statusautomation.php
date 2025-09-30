@@ -22,14 +22,23 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use Codeeshop\PsModuleLogger\Log;
 use PrestaShop\PrestaShop\Adapter\SymfonyContainer;
 use PrestaShop\PrestaShop\Core\Grid\Column\Type\Common\ToggleColumn;
 use PrestaShop\PrestaShop\Core\Grid\Column\Type\DataColumn;
 use PrestaShop\PrestaShop\Core\Grid\Filter\Filter;
 use PrestaShopBundle\Form\Admin\Type\YesAndNoChoiceType;
 
+// if (class_exists(Codeeshop\PsModuleLogger\Log::class)) {
+//     echo "Logger class loaded ✅";
+// } else {
+//     echo "Logger class NOT loaded ❌";
+// }
+
 class Statusautomation extends Module
 {
+    // for calling only 1 time
+    public static $IS_FUNC_CALLED = false;
     public const MY_DEBUG = 'WITHOUT';
     // protected $MY_DEBUG = 'WITH';
     protected $config_form = false;
@@ -53,24 +62,6 @@ class Statusautomation extends Module
         $this->description = $this->l('Status Automation Status Automation');
 
         $this->ps_versions_compliancy = ['min' => '1.6', 'max' => '9.0'];
-
-        // include dirname(__FILE__) . '/sql/uninstall.php';
-        // include dirname(__FILE__) . '/sql/install.php';
-        // $this->unregisterHook('actionObjectCustomerUpdateAfter');
-        // $this->registerHook('actionObjectOrderUpdateAfter');
-
-        // self::statusUpdateCondition(13620);
-
-        // $id_carrier_temp = false;
-        // $statusautomationModule = Module::getInstanceByName('statusautomation');
-        // if (Validate::isLoadedObject($statusautomationModule)) {
-        //     $id_carrier_temp = $statusautomationModule->getCarrierIdByCity($city, $id_country);
-        // }
-        // if ($id_carrier_temp) {
-        //     $this->context->cart->id_carrier = $id_carrier_temp;
-        // } else {
-        //     $this->context->cart->id_carrier = Tools::getValue('carrier', (int)Configuration::get("WL_OOW_CARRIER"));
-        // }
     }
 
     /**
@@ -88,6 +79,7 @@ class Statusautomation extends Module
             && $this->registerHook([
                 'header',
                 'actionObjectOrderUpdateAfter',
+                'displayFreeShippingHandlingMessage',
                 'actionOrderStatusPostUpdate',
                 'actionObjectCustomerUpdateBefore',
                 'displayBackOfficeHeader',
@@ -110,18 +102,35 @@ class Statusautomation extends Module
 
     private function test()
     {
+        // $this->registerHook('displayFreeShippingHandlingMessage');
+        // die;
         return;
-        $newOrderStatusObj = new stdClass();
-        // $newOrderStatusObj->id = 16;
-        // $id_order = 10;
-        $newOrderStatusObj->id = 11;
-        $id_order = 25;
-        $this->hookActionOrderStatusPostUpdate([
-            'newOrderStatus' => $newOrderStatusObj,
-            'id_order' => $id_order,
-        ]);
-        // exit($this->checkIfCasablanca($id_order));
-        exit('test done ' . $id_order);
+        // $newOrderStatusObj = new stdClass();
+        // // $newOrderStatusObj->id = 16;
+        // // $id_order = 10;
+        // $newOrderStatusObj->id = 11;
+        // $id_order = 25;
+        // $this->hookActionOrderStatusPostUpdate([
+        //     'newOrderStatus' => $newOrderStatusObj,
+        //     'id_order' => $id_order,
+        // ]);
+        // exit('test done ' . $id_order);
+
+        // include dirname(__FILE__) . '/sql/uninstall.php';
+        // include dirname(__FILE__) . '/sql/install.php';
+        // $this->unregisterHook('actionObjectCustomerUpdateAfter');
+        // $this->registerHook('actionObjectOrderUpdateAfter');
+
+        // $id_carrier_temp = false;
+        // $statusautomationModule = Module::getInstanceByName('statusautomation');
+        // if (Validate::isLoadedObject($statusautomationModule)) {
+        //     $id_carrier_temp = $statusautomationModule->getCarrierIdByCity($city, $id_country);
+        // }
+        // if ($id_carrier_temp) {
+        //     $this->context->cart->id_carrier = $id_carrier_temp;
+        // } else {
+        //     $this->context->cart->id_carrier = Tools::getValue('carrier', (int)Configuration::get("WL_OOW_CARRIER"));
+        // }
         // $this->getFreeShippingThreshold(151, 99);
     }
 
@@ -140,15 +149,11 @@ class Statusautomation extends Module
             $output .= $this->displayConfirmation($this->trans('Successfully Saved', [], 'Modules.Statusautomation.Statusautomation.php'));
         }
 
+        $sfContainer = SymfonyContainer::getInstance();
         $this->context->smarty->assign([
             'module_dir' => $this->_path,
             'register_url' => $this->context->link->getModuleLink('statusautomation', 'login', ['create_account' => '1']),
             'login_url' => $this->context->link->getModuleLink('statusautomation', 'login', []),
-        ]);
-
-        $sfContainer = SymfonyContainer::getInstance();
-
-        $this->context->smarty->assign([
             'STATUSAUTOMATION_DOWNLOAD_URL' => $sfContainer->get('router')->generate('statusautomation_download'),
         ]);
 
@@ -236,7 +241,8 @@ class Statusautomation extends Module
     {
         $configs = [];
 
-        foreach (['STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_GUEST',
+        foreach ([
+            'STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_GUEST',
             'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_GUEST',
             'STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_UNDER_VERIFICATION',
             'STATUSAUTOMATION_PHASE_1_ORDER_STATUS_UNDER_VERIFICATION',
@@ -255,6 +261,7 @@ class Statusautomation extends Module
             'STATUSAUTOMATION_PHASE_2_ORDER_STATUS_NOT_CASABLANCA',
             'STATUSAUTOMATION_PHASE_2_ID_CARRIER_CASABLANCA',
             'STATUSAUTOMATION_PHASE_2_ID_CARRIER_NOT_CASABLANCA',
+            'STATUSAUTOMATION_PHASE_2_STATUS',
         ] as $key) {
             $configs[$key] = Tools::getValue($key, Configuration::get($key));
         }
@@ -326,7 +333,12 @@ class Statusautomation extends Module
 
     public function hookActionObjectOrderUpdateAfter($params)
     {
-        $this->processPendingStatuses();
+        $CesLog = new Log('statusautomation');
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
+            if (!self::$IS_FUNC_CALLED) {
+                $this->processPendingStatuses();
+            }
+        }
     }
 
     /**
@@ -380,7 +392,8 @@ class Statusautomation extends Module
         }
 
         Media::addJsDef([
-            'STATUSAUTOMATION_CASABLANCA_CITIES' => $this->getCitiesArray(),
+            'STATUSAUTOMATION_PHASE_2_STATUS' => Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS'),
+            // 'STATUSAUTOMATION_CASABLANCA_CITIES' => $this->getCitiesArray(),
             'STATUSAUTOMATION_LOGIN_URL' => $loginURL,
             'STATUSAUTOMATION_SIGN_IN_LOGIN' => $this->trans('WhatsApp', [], 'Modules.Statusautomation.Statusautomation.php'),
             'STATUSAUTOMATION_ADD_EMAIL_TEXT' => $this->trans('+ Add Email', [], 'Modules.Statusautomation.Statusautomation.php'),
@@ -414,7 +427,11 @@ class Statusautomation extends Module
     private function processPendingStatuses()
     {
         $rows = StatusautomationPendingStatusChanges::getAll();
+
         if (!empty($rows)) {
+            self::$IS_FUNC_CALLED = true;
+            $CesLog = new Log('statusautomation');
+            $CesLog->write(json_encode(['rows' => $rows]));
             foreach ($rows as $row) {
                 self::putPaymentStatus(new Order((int) $row['id_order']), $row['target_id_order_state']);
                 StatusautomationPendingStatusChanges::delete($row['id_order'], $row['target_id_order_state']);
@@ -525,13 +542,17 @@ class Statusautomation extends Module
 
     public function hookActionOrderStatusPostUpdate($params)
     {
+        if (!Module::isEnabled($this->name)) {
+            return;
+        }
+
         try {
             $id_order = (int) $params['id_order'];
             if ($params['newOrderStatus']->id == Configuration::get('STATUSAUTOMATION_PHASE_1_ORDER_STATUS_CONVERT_GROUP_TO_BLACKLIST')) {
                 self::updateCustomerGroup($id_order, Configuration::get('STATUSAUTOMATION_PHASE_1_CUSTOMER_GROUP_ID_BLACKLIST'));
             }
 
-            if ($params['newOrderStatus']->id == Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CONFIRMED')) {
+            if (Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS') && $params['newOrderStatus']->id == Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CONFIRMED')) {
                 // check if city is casablanca
                 if ($this->checkIfCasablanca($id_order)) {
                     $this->saveForNextUpdate(new Order($id_order), Configuration::get('STATUSAUTOMATION_PHASE_2_ORDER_STATUS_CASABLANCA'));
@@ -540,8 +561,8 @@ class Statusautomation extends Module
                 }
             }
         } catch (Exception $err) {
-            $this->CesLog = new CesLog('error.log');
-            $this->CesLog->write($err->getMessage());
+            $CesLog = new Log('statusautomation', 'error.log');
+            $CesLog->write($err->getMessage());
         }
     }
 
@@ -840,11 +861,10 @@ class Statusautomation extends Module
 
     private static function putPaymentStatus($order, $order_status)
     {
+        $CesLog = new Log('statusautomation');
         if (Validate::isLoadedObject($order) && $order->current_state != $order_status) {
             $order->setCurrentState((int) $order_status);
-            // $history = new OrderHistory();
-            // $history->id_order = (int) $order->id;
-            // $history->changeIdOrderState((int) $order_status, $order);
+            $CesLog->write(sprintf('Updated: Order Id - %s, Status: %s', $order->id, $order_status));
         }
     }
 
@@ -1209,6 +1229,26 @@ class Statusautomation extends Module
         }
 
         $inputs[] = [
+            'type' => 'switch',
+            'label' => $this->trans('Live Status', [], 'Modules.Statusautomation.Statusautomation.php'),
+            'name' => 'STATUSAUTOMATION_PHASE_2_STATUS',
+            'is_bool' => true,
+            'values' => [
+                [
+                    'id' => 'active_on',
+                    'value' => true,
+                    'label' => $this->l('Enabled'),
+                ],
+                [
+                    'id' => 'active_off',
+                    'value' => false,
+                    'label' => $this->l('Disabled'),
+                ],
+            ],
+            'tab' => 'phase_2_inputs',
+        ];
+
+        $inputs[] = [
             'type' => 'select',
             'class' => 'casablanca_cities',
             'multiple' => true,
@@ -1300,31 +1340,25 @@ class Statusautomation extends Module
         return $orderStates;
     }
 
-    public function getFreeShippingThreshold($id_country, $id_carrier = null, $price = 0)
-    {
-        $query = new DbQuery();
-        $query->select('prp.delimiter1');
-        // $query->select('pd.id_zone, prp.*, pd.price, (select pcl.name from `' . _DB_PREFIX_ . 'country_lang` `pcl` WHERE pcl.id_country = pc.id_country LIMIT 1) country_name');
-        $query->from('country', 'pc');
-        $query->leftJoin('delivery', 'pd', 'pd.id_zone = pc.id_zone');
-        $query->leftJoin('range_price', 'prp', 'prp.id_carrier = pd.id_carrier AND prp.id_range_price = pd.id_range_price');
-        $query->where('pc.id_country = ' . (int) $id_country);
-        if ($id_carrier) {
-            $query->where('prp.id_carrier = ' . (int) $id_carrier);
-        }
-        $query->where('pd.price = ' . (int) $price);
-
-        $rows = Db::getInstance()->executeS($query);
-        print_r($query->__toString());
-        dump($rows);
-        exit;
-
-        return Db::getInstance()->getValue($query);
-    }
-
     private function getCitiesArray()
     {
         return json_decode(Configuration::get('STATUSAUTOMATION_PHASE_2_CASABLANCA_CITIES'), true);
+    }
+
+    public function hookDisplayFreeShippingHandlingMessage($params)
+    {
+        $output = '';
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
+            $free_remaining_amount = StatusautomationShippingHelper::getRemainingForCarrierFreeShipping($params['cart'], $params['id_carrier'], $params['id_country'], $params['cart_total']);
+            $this->context->smarty->assign([
+                // 'free_remaining_amount' => $free_remaining_amount,
+                'free_remaining_amount' => $free_remaining_amount ? Tools::displayPrice($free_remaining_amount) : false,
+            ]);
+
+            $output .= $this->context->smarty->fetch($this->local_path . 'views/templates/hook/displayFreeShippingHandlingMessage.tpl');
+        }
+
+        return $output;
     }
 
     // from Orderonwhatsapp > ajax.php, update > id_carrier
@@ -1332,23 +1366,12 @@ class Statusautomation extends Module
     {
         $id_carrier = null;
 
-        if ($city && $this->checkIfCasablancaCity($city)) {
-            // print_r([
-            //     'is_casablanca' => true,
-            //     'city' => $city,
-            //     'hook' => $hook,
-            //     'id_country' => $id_country,
-            // ]);
-
-            $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_CASABLANCA');
-        } else {
-            $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_NOT_CASABLANCA');
-            // print_r([
-            //     'city' => $city,
-            //     'hook' => $hook,
-            //     'id_country' => $id_country,
-            // ]);
-            // return;
+        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
+            if ($city && $this->checkIfCasablancaCity($city)) {
+                $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_CASABLANCA');
+            } else {
+                $id_carrier = Configuration::get('STATUSAUTOMATION_PHASE_2_ID_CARRIER_NOT_CASABLANCA');
+            }
         }
 
         return $id_carrier;
