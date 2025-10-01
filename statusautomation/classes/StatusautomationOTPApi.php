@@ -52,7 +52,7 @@ class StatusautomationOTPApi
         return $response;
     }
 
-    private function sendWhatsAppTemplateMessage($phone_number, $template_name, $language_code, $template_parameters = [])
+    private static function sendWhatsAppTemplateMessage($phone_number, $template_name, $language_code, $template_parameters = [])
     {
         $module = Module::getInstanceByName('statusautomation');
         try {

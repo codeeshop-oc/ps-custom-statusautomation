@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
@@ -39,7 +38,9 @@ class Statusautomation extends Module
 {
     // for calling only 1 time
     public static $IS_FUNC_CALLED = false;
-    public const MY_DEBUG = 'WITHOUT';
+    public const MY_DEBUG = 'WITH';
+    // public const MY_DEBUG = 'WITHOUT';
+    // public const MY_DEBUG = 'WITHOUT';
     // protected $MY_DEBUG = 'WITH';
     protected $config_form = false;
 
