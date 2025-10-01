@@ -20,6 +20,6 @@
     <div class="alert alert-info" role="alert">
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true"><i class="material-icons">close</i></span>
-      </button>{l s='Remaining Amount for free delivery: %s' sprintf=[{$free_remaining_amount}] d='Modules.Statusautomation.Configure'}
+      </button>{l s='Amount remaining to get free delivery: %s' sprintf=[{$free_remaining_amount}] d='Modules.Statusautomation.Configure'}
     </div>
 {/if}
