@@ -34,5 +34,34 @@ function upgrade_module_1_1_0($module)
      * You could add a column in one of your module's tables
      */
 
+    $module->registerHook([
+        'header',
+        'actionObjectOrderUpdateAfter',
+        'displayFreeShippingHandlingMessage',
+        'actionOrderStatusPostUpdate',
+        'actionObjectCustomerUpdateBefore',
+        'displayBackOfficeHeader',
+        'moduleRoutes',
+        'displayOrderConfirmation',
+        'actionCustomerGridQueryBuilderModifier',
+        'additionalCustomerFormFields',
+        'actionCustomerGridDefinitionModifier',
+    ]);
+
+    $sql = [];
+
+    $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'statusautomation_pending_status_changes` (
+        `id_order` int(11) NOT NULL,
+        `target_id_order_state` int(11) NOT NULL,
+        `date_add` datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY  (`id_order`, `target_id_order_state`)
+    ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
+    foreach ($sql as $query) {
+        if (Db::getInstance()->execute($query) == false) {
+            return false;
+        }
+    }
+
     return true;
 }

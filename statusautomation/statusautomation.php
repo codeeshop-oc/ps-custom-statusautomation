@@ -47,7 +47,7 @@ class Statusautomation extends Module
     {
         $this->name = 'statusautomation';
         $this->tab = 'others';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'Anant Fiverr';
         $this->need_instance = 0;
 
@@ -221,8 +221,8 @@ class Statusautomation extends Module
                     'icon' => 'icon-cogs',
                 ],
                 'tabs' => [
-                    'phase_2_inputs' => $this->l('Phase 2'),
                     'phase_1_inputs' => $this->l('Order Confirmation & VIP Offer Popup'),
+                    'phase_2_inputs' => $this->l('Phase 2'),
                     'phase_3_inputs' => $this->l('Phase 3'),
                     'phase_4_inputs' => $this->l('Phase 4'),
                 ],
