@@ -33,13 +33,8 @@ class StatusautomationCustomerLoginForm extends AbstractForm
      */
     private $IDNConverter;
 
-    public function __construct(
-        Smarty $smarty,
-        Context $context,
-        TranslatorInterface $translator,
-        StatusautomationCustomerLoginFormatter $formatter,
-        array $urls
-    ) {
+    public function __construct(Smarty $smarty, Context $context, TranslatorInterface $translator, StatusautomationCustomerLoginFormatter $formatter, array $urls)
+    {
         parent::__construct(
             $smarty,
             $translator,
