@@ -38,7 +38,7 @@ class StatusautomationCustomerLoginForm extends AbstractForm
         Context $context,
         TranslatorInterface $translator,
         StatusautomationCustomerLoginFormatter $formatter,
-        array $urls,
+        array $urls
     ) {
         parent::__construct(
             $smarty,
@@ -62,7 +62,7 @@ class StatusautomationCustomerLoginForm extends AbstractForm
             $current_customer_id = StatusautomationBlacklist::getOneCustomerIdByWhatsappNumber(Tools::getValue('whatsapp', false));
 
             if (!$current_customer_id) {
-                $this->errors[''][] = $this->translator->trans('Customer does not exist', [], 'Shop.Notifications.Error');
+                $this->errors[''][] = $this->translator->trans('Customer does not exist', [], 'Modules.Statusautomation.Shop');
             }
 
             $ts_whatsappModule = Module::getInstanceByName('ts_whatsapp');
@@ -91,9 +91,9 @@ class StatusautomationCustomerLoginForm extends AbstractForm
             );
 
             if (isset($authentication->active) && !$authentication->active) {
-                $this->errors[''][] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Shop.Notifications.Error');
+                $this->errors[''][] = $this->translator->trans('Your account isn\'t available at this time, please contact us', [], 'Modules.Statusautomation.Shop');
             } elseif (!$authentication || !$customer->id || $customer->is_guest) {
-                $this->errors[''][] = $this->translator->trans('Authentication failed.', [], 'Shop.Notifications.Error');
+                $this->errors[''][] = $this->translator->trans('Authentication failed.', [], 'Modules.Statusautomation.Shop');
             } else {
                 $this->context->updateCustomer($customer);
 
