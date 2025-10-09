@@ -28,6 +28,9 @@ use PrestaShop\PrestaShop\Core\Grid\Column\Type\DataColumn;
 use PrestaShop\PrestaShop\Core\Grid\Filter\Filter;
 use PrestaShopBundle\Form\Admin\Type\YesAndNoChoiceType;
 
+require_once _PS_MODULE_DIR_ . 'statusautomation/vendor/autoload.php';
+require_once _PS_MODULE_DIR_ . 'ts_whatsapp/ts_whatsapp.php';
+
 // if (class_exists(Codeeshop\PsModuleLogger\Log::class)) {
 //     echo "Logger class loaded ✅";
 // } else {
@@ -38,10 +41,9 @@ class Statusautomation extends Module
 {
     // for calling only 1 time
     public static $IS_FUNC_CALLED = false;
-    public const MY_DEBUG = 'WITH';
+    public const MY_DEBUG = 'NONE';
+    // public const MY_DEBUG = 'WITH';
     // public const MY_DEBUG = 'WITHOUT';
-    // public const MY_DEBUG = 'WITHOUT';
-    // protected $MY_DEBUG = 'WITH';
     protected $config_form = false;
 
     public function __construct()

@@ -64,6 +64,7 @@ class StatusautomationBlacklist extends ObjectModel
      */
     public static function getCustomerIdsByWhatsappNumber($whatsapp_number)
     {
+        $whatsapp_number = Ts_WhatsApp::normalizeWhatsappNumber($whatsapp_number);
         $query = new DbQuery();
         $query->select('pw.id_customer');
         $query->from('ts_whatsapp', 'pw');
@@ -82,6 +83,7 @@ class StatusautomationBlacklist extends ObjectModel
      */
     public static function getOneCustomerIdByWhatsappNumber($whatsapp_number, $is_guest = false)
     {
+        $whatsapp_number = Ts_WhatsApp::normalizeWhatsappNumber($whatsapp_number);
         $shopGroup = Shop::getGroupFromShop(Shop::getContextShopID(), false);
 
         $query = new DbQuery();

@@ -37,15 +37,15 @@ class StatusautomationOTPApi
         $template_parameters[] = $phone['message'];
 
         // remove
-        if (Statusautomation::MY_DEBUG == 'WITHOUT') {
-            return ['status' => true, 'message' => 'sent'];
-        }
+        // if (Statusautomation::MY_DEBUG == 'WITHOUT') {
+        //     return ['status' => true, 'message' => 'sent'];
+        // }
 
-        // remove
-        if (Statusautomation::MY_DEBUG == 'WITH') {
-            $phone['prefix_whatsapp_number'] = '+91';
-            $phone['phone_number'] = '7838659995';
-        }
+        // // remove
+        // if (Statusautomation::MY_DEBUG == 'WITH') {
+        //     $phone['prefix_whatsapp_number'] = '+91';
+        //     $phone['phone_number'] = '7838659995';
+        // }
 
         $response = self::sendWhatsAppTemplateMessage(self::formatMobilePhoneForWhatsapp($phone['phone_number'], $phone['prefix_whatsapp_number']), self::OTP_TEMPLATE, Context::getContext()->language->iso_code, $template_parameters);
 

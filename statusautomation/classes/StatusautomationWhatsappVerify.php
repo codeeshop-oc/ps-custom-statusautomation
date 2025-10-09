@@ -47,9 +47,9 @@ class StatusautomationWhatsappVerify extends ObjectModel
         $query->from('ts_whatsapp', 's');
         $query->where('s.`id_customer` = ' . (int) $id_customer);
 
-        $whatsapp_number = Db::getInstance()->getRow($query);
+        $row = Db::getInstance()->getRow($query);
 
-        return $whatsapp_number ?? false;
+        return $row ?? false;
     }
 
     public static function generateOtpCode($length = 6)

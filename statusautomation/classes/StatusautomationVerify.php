@@ -37,6 +37,7 @@ class StatusautomationVerify extends ObjectModel
 
     public static function isVerified($delivery_phone_number, $is_verified = '1')
     {
+        $delivery_phone_number = Ts_WhatsApp::normalizeWhatsappNumber($delivery_phone_number);
         $query = new DbQuery();
         $query->select('count(s.`whatsapp_number`)');
         $query->from(self::$definition['table'], 's');

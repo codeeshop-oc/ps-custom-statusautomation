@@ -40,6 +40,7 @@ class StatusautomationPendingStatusChanges
         $query = new DbQuery();
         $query->select('id_order, target_id_order_state');
         $query->from(self::TABLE, 'pw');
+        // $phone = Ts_WhatsApp::normalizeWhatsappNumber($phone);
         // $query->where('(pw.whatsapp_number = "' . $whatsapp_number . '" OR pw.whatsapp_number = "0' . $whatsapp_number . '" )');
         // $query->groupBy('pw.id_customer');
 
