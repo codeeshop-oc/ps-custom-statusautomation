@@ -107,7 +107,7 @@ class Statusautomation extends Module
     private function test()
     {
         // remove
-        $this->unregisterHook('displayFreeShippingHandlingMessage');
+        // $this->unregisterHook('displayFreeShippingHandlingMessage');
 
         return;
         // $newOrderStatusObj = new stdClass();
