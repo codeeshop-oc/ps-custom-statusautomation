@@ -51,7 +51,7 @@ class Statusautomation extends Module
     {
         $this->name = 'statusautomation';
         $this->tab = 'others';
-        $this->version = '1.1.0';
+        $this->version = '1.2.0';
         $this->author = 'Anant Fiverr';
         $this->need_instance = 0;
 
@@ -66,6 +66,7 @@ class Statusautomation extends Module
         $this->description = $this->l('Status Automation Status Automation');
 
         $this->ps_versions_compliancy = ['min' => '1.6', 'max' => '9.0'];
+
     }
 
     /**
@@ -83,7 +84,7 @@ class Statusautomation extends Module
             && $this->registerHook([
                 'header',
                 'actionObjectOrderUpdateAfter',
-                'displayFreeShippingHandlingMessage',
+                // 'displayFreeShippingHandlingMessage',
                 'actionOrderStatusPostUpdate',
                 'actionObjectCustomerUpdateBefore',
                 'displayBackOfficeHeader',
@@ -106,8 +107,8 @@ class Statusautomation extends Module
 
     private function test()
     {
-        // $this->registerHook('displayFreeShippingHandlingMessage');
-        // die;
+        // remove
+        $this->unregisterHook('displayFreeShippingHandlingMessage');
         return;
         // $newOrderStatusObj = new stdClass();
         // // $newOrderStatusObj->id = 16;
@@ -1349,21 +1350,21 @@ class Statusautomation extends Module
         return json_decode(Configuration::get('STATUSAUTOMATION_PHASE_2_CASABLANCA_CITIES'), true);
     }
 
-    public function hookDisplayFreeShippingHandlingMessage($params)
-    {
-        $output = '';
-        if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
-            $free_remaining_amount = StatusautomationShippingHelper::getRemainingForCarrierFreeShipping($params['cart'], $params['id_carrier'], $params['id_country'], $params['cart_total']);
-            $this->context->smarty->assign([
-                // 'free_remaining_amount' => $free_remaining_amount,
-                'free_remaining_amount' => $free_remaining_amount ? Tools::displayPrice($free_remaining_amount) : false,
-            ]);
+    // public function hookDisplayFreeShippingHandlingMessage($params)
+    // {
+        // $output = '';
+        // if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
+        //     $free_remaining_amount = StatusautomationShippingHelper::getRemainingForCarrierFreeShipping($params['cart'], $params['id_carrier'], $params['id_country'], $params['cart_total']);
+        //     $this->context->smarty->assign([
+        //         // 'free_remaining_amount' => $free_remaining_amount,
+        //         'free_remaining_amount' => $free_remaining_amount ? Tools::displayPrice($free_remaining_amount) : false,
+        //     ]);
 
-            $output .= $this->context->smarty->fetch($this->local_path . 'views/templates/hook/displayFreeShippingHandlingMessage.tpl');
-        }
+        //     $output .= $this->context->smarty->fetch($this->local_path . 'views/templates/hook/displayFreeShippingHandlingMessage.tpl');
+        // }
 
-        return $output;
-    }
+        // return $output;
+    // }
 
     // from Orderonwhatsapp > ajax.php, update > id_carrier
     public function getCarrierIdByCity($city, $id_country, $hook = '')
