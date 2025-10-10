@@ -66,7 +66,6 @@ class Statusautomation extends Module
         $this->description = $this->l('Status Automation Status Automation');
 
         $this->ps_versions_compliancy = ['min' => '1.6', 'max' => '9.0'];
-
     }
 
     /**
@@ -109,6 +108,7 @@ class Statusautomation extends Module
     {
         // remove
         $this->unregisterHook('displayFreeShippingHandlingMessage');
+
         return;
         // $newOrderStatusObj = new stdClass();
         // // $newOrderStatusObj->id = 16;
@@ -1352,18 +1352,18 @@ class Statusautomation extends Module
 
     // public function hookDisplayFreeShippingHandlingMessage($params)
     // {
-        // $output = '';
-        // if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
-        //     $free_remaining_amount = StatusautomationShippingHelper::getRemainingForCarrierFreeShipping($params['cart'], $params['id_carrier'], $params['id_country'], $params['cart_total']);
-        //     $this->context->smarty->assign([
-        //         // 'free_remaining_amount' => $free_remaining_amount,
-        //         'free_remaining_amount' => $free_remaining_amount ? Tools::displayPrice($free_remaining_amount) : false,
-        //     ]);
+    // $output = '';
+    // if (Module::isEnabled($this->name) && Configuration::get('STATUSAUTOMATION_PHASE_2_STATUS')) {
+    //     $free_remaining_amount = StatusautomationShippingHelper::getRemainingForCarrierFreeShipping($params['cart'], $params['id_carrier'], $params['id_country'], $params['cart_total']);
+    //     $this->context->smarty->assign([
+    //         // 'free_remaining_amount' => $free_remaining_amount,
+    //         'free_remaining_amount' => $free_remaining_amount ? Tools::displayPrice($free_remaining_amount) : false,
+    //     ]);
 
-        //     $output .= $this->context->smarty->fetch($this->local_path . 'views/templates/hook/displayFreeShippingHandlingMessage.tpl');
-        // }
+    //     $output .= $this->context->smarty->fetch($this->local_path . 'views/templates/hook/displayFreeShippingHandlingMessage.tpl');
+    // }
 
-        // return $output;
+    // return $output;
     // }
 
     // from Orderonwhatsapp > ajax.php, update > id_carrier
