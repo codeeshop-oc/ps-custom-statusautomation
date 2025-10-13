@@ -1300,7 +1300,7 @@ class Statusautomation extends Module
             'class' => 'chosen',
             'label' => $this->trans('Carrier (Casablanca)', [], 'Modules.Statusautomation.Statusautomation.php'),
             'name' => 'STATUSAUTOMATION_PHASE_2_ID_CARRIER_CASABLANCA',
-            'desc' => $this->l('if ordered city is `not Casablanca` this carrier is auto selected'),
+            'desc' => $this->l('if ordered city is `Casablanca` this carrier is auto selected'),
             'options' => [
                 'query' => $this->getCarriers(),
                 'id' => 'id_carrier',

@@ -21,7 +21,7 @@
 class StatusautomationOTPApi
 {
     private const VERBOSE = true;
-    public const API_VERSION = 'v22.0';
+    public const API_VERSION = 'v23.0';
     private const OTP_TEMPLATE = 'ps_statusautomation_otp';
     // private const OTP_TEMPLATE_LANGUAGE = 'en_US';
 
@@ -65,6 +65,10 @@ class StatusautomationOTPApi
             self::log([
                 'url' => $url,
             ]);
+            // for english update the template to suffic _en
+            if ($language_code == 'en') {
+                $template_name .= '_en';
+            }
 
             // Build the message payload
             $payload = [

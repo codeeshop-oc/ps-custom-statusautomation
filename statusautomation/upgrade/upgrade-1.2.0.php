@@ -34,7 +34,7 @@ function upgrade_module_1_2_0($module)
      * You could add a column in one of your module's tables
      */
 
-    $module->unregisterHook('displayFreeShippingHandlingMessage');    
+    $module->unregisterHook('displayFreeShippingHandlingMessage');
 
     return true;
 }
